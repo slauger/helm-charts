@@ -1,0 +1,35 @@
+---
+kind: CronJob
+apiVersion: batch/v1beta1
+metadata:
+  name: {{ .Release.Name }}-cache-clear
+spec:                          
+  schedule: "0 4 * * *"
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      backoffLimit: 0
+      template:
+        spec:
+          containers:
+            - name: auto-update
+              image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+              command: ["/usr/local/bin/cache-clear.sh"]
+              volumeMount:
+                - name: config-volume
+                  mountPath: /usr/local/bin/cache-clear.sh
+                  subPath: cache-clear.sh
+          restartPolicy: "Never"
+          terminationGracePeriodSeconds: 30
+          activeDeadlineSeconds: 500
+          dnsPolicy: "ClusterFirst"
+          volumes:
+            - name: config-volume
+              configMap:
+                name: {{ .Release.Name }}-cache-clear
+              defaultMode: 0555
+{{- if eq .Values.serviceAccount.name "" }}
+          serviceAccountName: {{ .Release.Name }}
+{{- else }}
+          serviceAccountName: {{ .Values.serviceAccount.name }}
+{{- end }}
