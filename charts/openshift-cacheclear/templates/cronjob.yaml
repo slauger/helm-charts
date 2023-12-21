@@ -12,10 +12,18 @@ spec:
       template:
         spec:
           containers:
-            - name: auto-update
+            - name: cache-clear
               image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
-              command: ["/usr/local/bin/cache-clear.sh"]
-              volumeMount:
+              command: ["bash", "/usr/local/bin/cache-clear.sh"]
+              securityContext:
+                capabilities:
+                  drop:
+                    - "ALL"
+                seccompProfile:
+                  type: "RuntimeDefault"
+                allowPrivilegeEscalation: false
+                runAsNonRoot: true
+              volumeMounts:
                 - name: config-volume
                   mountPath: /usr/local/bin/cache-clear.sh
                   subPath: cache-clear.sh
@@ -27,7 +35,6 @@ spec:
             - name: config-volume
               configMap:
                 name: {{ .Release.Name }}-cache-clear
-              defaultMode: 0555
 {{- if eq .Values.serviceAccount.name "" }}
           serviceAccountName: {{ .Release.Name }}
 {{- else }}
