@@ -1,0 +1,28 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "Helper.name" . }}-ingress
+  annotations:
+    route.openshift.io/termination: "reencrypt" 
+    haproxy.router.openshift.io/balance: "roundrobin"
+    haproxy.router.openshift.io/disable_cookies: "true"
+    haproxy.router.openshift.io/hsts_header: "max-age=15768000"
+    #haproxy.router.openshift.io/ip_whitelist: "192.168.254.0/24"
+  labels:
+    {{- include "Helper.labels" . | nindent 4 }}
+spec:
+  rules:
+  - host: "{{ tpl .Values.route.host . }}"
+    http:
+      paths:
+      - path: /
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: {{ include "Helper.name" . }}
+            port:
+              name: https
+  #tls:
+  #- hosts:
+  #  - "{{ tpl .Values.route.host . }}"
+  #  secretName: {{ include "Helper.name" . }}-tls-cert

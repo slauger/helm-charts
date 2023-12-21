@@ -1,0 +1,49 @@
+kind: CronJob
+apiVersion: batch/v1beta1
+metadata:
+  name: {{ .Release.Name }}-ldap-group-sync
+spec:                          
+  schedule: "*/15 * * * *"                                                 
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      backoffLimit: 0
+      template:
+        spec:
+          containers:
+            - name: ldap-group-sync
+              image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+              command:
+                - "/bin/bash"
+                - "-c"
+                - oc adm groups sync --sync-config=/etc/config/ldap-group-sync.yaml --whitelist=/etc/config/whitelist.txt --confirm
+              volumeMounts:
+                - mountPath: "/etc/config"
+                  name: "ldap-sync-volume"
+                - mountPath: "/etc/secrets"
+                  name: "ldap-bind-password"
+{{- if .Values.cabundle }}
+                - mountPath: "/etc/ldap-ca"
+                  name: "ldap-ca"
+{{- end }}
+          volumes:
+            - name: "ldap-sync-volume"
+              configMap:
+                name: "{{ .Release.Name }}-ldap-config"
+            - name: "ldap-bind-password"
+              secret:
+                secretName: "{{ .Release.Name }}-ldap-secret"
+{{- if .Values.cabundle }}
+            - name: "ldap-ca"
+              configMap:
+                name: "{{ .Release.Name }}-ldap-ca"
+{{- end }}
+          restartPolicy: "Never"
+          terminationGracePeriodSeconds: 30
+          activeDeadlineSeconds: 500
+          dnsPolicy: "ClusterFirst"
+{{- if eq .Values.serviceAccount.name "" }}
+          serviceAccountName: {{ .Release.Name }}
+{{- else }}
+          serviceAccountName: {{ .Values.serviceAccount.name }}
+{{- end }}

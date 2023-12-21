@@ -1,0 +1,97 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "Helper.name" . }}
+  labels:
+    {{- include "Helper.labels" . | nindent 4 }}
+spec:
+  progressDeadlineSeconds: 600
+  replicas: {{ .Values.replicas }}
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      {{- include "Helper.selectorLabels" . | nindent 6 }}
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        {{- include "Helper.selectorLabels" . | nindent 8 }}
+    spec:
+      serviceAccount: {{ include "Helper.name" . }}
+      serviceAccountName: {{ include "Helper.name" . }}
+      containers:
+      - image: {{ .Values.images.envoy }}
+        imagePullPolicy: {{ .Values.image.imagePullPolicy }}
+        name: envoy
+        ports:
+        - containerPort: 8443
+          protocol: TCP
+        volumeMounts:
+          - name: tls-cert
+            mountPath: /etc/envoy/tls.crt
+            subPath: tls.crt
+          - name:  tls-cert
+            mountPath: /etc/envoy/tls.key
+            subPath: tls.key
+          - name: config
+            mountPath: /etc/envoy/envoy.yaml
+            subPath: envoy.yaml
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      - image: {{ .Values.images.application }}
+        imagePullPolicy: {{ .Values.image.imagePullPolicy }}
+        name: application
+        env:
+        {{ if .Values.env }}
+        {{- toYaml .Values.env | nindent 10 }}
+        {{- end }}
+          - name: MY_NODE_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
+          - name: MY_POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          - name: MY_POD_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          - name: MY_POD_IP
+            valueFrom:
+              fieldRef:
+                fieldPath: status.podIP
+          - name: MY_POD_SERVICE_ACCOUNT
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.serviceAccountName
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      volumes:
+        - name: tls-cert
+          secret:
+            secretName: {{ include "Helper.name" . }}-tls-cert
+            defaultMode: 420
+        - name: config
+          configMap:
+            name: {{ include "Helper.name" . }}-config
+            defaultMode: 420
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              app: {{ include "Helper.name" . }}
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
