@@ -1,0 +1,13 @@
+---
+image:
+  imagePullPolicy: IfNotPresent
+
+route:
+  prefix: "deployment"
+  baseDomain: cluster.example.tld
+  host: "{{ .Values.route.prefix }}.{{ .Values.route.baseDomain }}"
+
+images:
+  application: "quay.io/slauger/hello-openshift:latest"
+
+env: []
