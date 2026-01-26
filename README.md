@@ -59,16 +59,16 @@ helm install my-release charts/chart-name --dry-run --debug
 
 ## Publishing
 
-Charts are automatically published to GitHub Pages when changes are pushed to the `main` branch. The workflow uses [chart-releaser-action](https://github.com/helm/chart-releaser-action) to:
+Charts are automatically published to GitHub Pages when changes are pushed to the `main` branch. The workflow:
 
-1. Package charts
-2. Create GitHub releases
-3. Update the Helm repository index
-4. Publish to GitHub Pages
+1. Packages Helm charts
+2. Creates GitHub releases with chart packages
+3. Generates Helm repository index
+4. Deploys to GitHub Pages via artifacts (no branch needed)
 
 **Requirements:**
 - GitHub Pages must be enabled in repository settings
-- Source: `gh-pages` branch
+- Source: `GitHub Actions`
 
 ## Contributing
 

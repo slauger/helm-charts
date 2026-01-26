@@ -31,10 +31,44 @@ jobs:
         with:
           version: v3.14.0
 
-      - name: Run chart-releaser
+      - name: Package Helm Charts
+        run: |
+          mkdir -p .cr-release-packages
+          for chart in charts/*; do
+            if [ -f "$chart/Chart.yaml" ]; then
+              helm package "$chart" -d .cr-release-packages
+            fi
+          done
+
+      - name: Create GitHub Releases
         uses: helm/chart-releaser-action@v1.6.0
         env:
           CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
         with:
           charts_dir: charts
-          pages_branch: gh-pages
+          skip_packaging: true
+
+      - name: Generate Helm Repository Index
+        run: |
+          mkdir -p .cr-index
+          helm repo index .cr-release-packages --url https://github.com/slauger/helm-charts/releases/download
+          cp .cr-release-packages/index.yaml .cr-index/index.yaml
+
+      - name: Upload Pages Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: .cr-index
+
+  deploy:
+    needs: release
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
