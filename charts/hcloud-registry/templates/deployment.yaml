@@ -1,0 +1,113 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "hcloud-registry.fullname" . }}
+  labels:
+    {{- include "hcloud-registry.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "hcloud-registry.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "hcloud-registry.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- if .Values.serviceAccount.create }}
+      serviceAccountName: {{ include "hcloud-registry.serviceAccountName" . }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.securityContext | nindent 8 }}
+      containers:
+      - name: {{ .Chart.Name }}
+        securityContext:
+          {{- toYaml .Values.securityContext | nindent 12 }}
+        image: {{ include "hcloud-registry.image" . }}
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        ports:
+        - name: http
+          containerPort: 5000
+          protocol: TCP
+        env:
+        {{- if .Values.auth.htpasswd }}
+        - name: REGISTRY_AUTH
+          value: "htpasswd"
+        - name: REGISTRY_AUTH_HTPASSWD_REALM
+          value: "Registry Realm"
+        - name: REGISTRY_AUTH_HTPASSWD_PATH
+          value: "/auth/htpasswd"
+        {{- end }}
+        - name: REGISTRY_STORAGE
+          value: "s3"
+        - name: REGISTRY_STORAGE_S3_BUCKET
+          value: {{ .Values.storage.s3.bucket | quote }}
+        - name: REGISTRY_STORAGE_S3_REGION
+          value: {{ .Values.storage.s3.region | quote }}
+        - name: REGISTRY_STORAGE_S3_REGIONENDPOINT
+          value: {{ .Values.storage.s3.endpoint | quote }}
+        {{- if and .Values.storage.s3.accessKey .Values.storage.s3.secretKey }}
+        - name: REGISTRY_STORAGE_S3_ACCESSKEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "hcloud-registry.fullname" . }}-s3
+              key: accessKey
+        - name: REGISTRY_STORAGE_S3_SECRETKEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "hcloud-registry.fullname" . }}-s3
+              key: secretKey
+        {{- end }}
+        - name: REGISTRY_STORAGE_S3_ENCRYPT
+          value: {{ .Values.storage.s3.encrypt | quote }}
+        - name: REGISTRY_STORAGE_S3_SECURE
+          value: {{ .Values.storage.s3.secure | quote }}
+        - name: REGISTRY_STORAGE_S3_V4AUTH
+          value: {{ .Values.storage.s3.v4auth | quote }}
+        - name: REGISTRY_STORAGE_S3_ROOTDIRECTORY
+          value: {{ .Values.storage.s3.rootdirectory | quote }}
+        - name: REGISTRY_STORAGE_CACHE_BLOBDESCRIPTOR
+          value: "inmemory"
+        - name: REGISTRY_HEALTH_STORAGEDRIVER_ENABLED
+          value: "true"
+        - name: REGISTRY_HEALTH_STORAGEDRIVER_INTERVAL
+          value: "10s"
+        - name: REGISTRY_HEALTH_STORAGEDRIVER_THRESHOLD
+          value: "3"
+        {{- if .Values.auth.htpasswd }}
+        volumeMounts:
+        - name: auth
+          mountPath: /auth
+          readOnly: true
+        {{- end }}
+        livenessProbe:
+          {{- toYaml .Values.livenessProbe | nindent 12 }}
+        readinessProbe:
+          {{- toYaml .Values.readinessProbe | nindent 12 }}
+        resources:
+          {{- toYaml .Values.resources | nindent 12 }}
+      {{- if .Values.auth.htpasswd }}
+      volumes:
+      - name: auth
+        secret:
+          secretName: {{ include "hcloud-registry.fullname" . }}-auth
+          items:
+          - key: htpasswd
+            path: htpasswd
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

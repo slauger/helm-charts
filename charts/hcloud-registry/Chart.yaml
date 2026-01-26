@@ -1,0 +1,17 @@
+apiVersion: v2
+name: hcloud-registry
+description: Docker Registry v2 with Hetzner Cloud S3 storage backend
+type: application
+version: 0.1.0
+appVersion: "2.8.3"
+keywords:
+  - docker
+  - registry
+  - hetzner
+  - s3
+home: https://github.com/slauger/helm-charts
+sources:
+  - https://github.com/distribution/distribution
+maintainers:
+  - name: Simon Lauger
+    email: simon@lauger.de
