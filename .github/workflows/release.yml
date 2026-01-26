@@ -41,30 +41,36 @@ jobs:
             fi
           done
 
-      - name: Delete existing releases and tags
+      - name: Delete all existing releases
         run: |
-          for package in .cr-release-packages/*.tgz; do
-            if [ -f "$package" ]; then
-              chart_name=$(basename "$package" .tgz)
-              echo "Checking for existing release: $chart_name"
-
-              # Delete release if it exists (ignore errors if it doesn't exist)
-              gh release delete "$chart_name" --yes --cleanup-tag 2>/dev/null || true
-
-              # Delete tag if it exists
-              git push origin --delete "refs/tags/$chart_name" 2>/dev/null || true
+          echo "Deleting all existing releases..."
+          gh release list --limit 100 | while read -r line; do
+            tag=$(echo "$line" | awk '{print $1}')
+            if [ -n "$tag" ]; then
+              echo "Deleting release and tag: $tag"
+              gh release delete "$tag" --yes --cleanup-tag 2>/dev/null || true
             fi
           done
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Create GitHub Releases
-        uses: helm/chart-releaser-action@v1.6.0
+      - name: Create GitHub Releases (without tags)
+        run: |
+          for package in .cr-release-packages/*.tgz; do
+            if [ -f "$package" ]; then
+              chart_name=$(basename "$package" .tgz)
+              echo "Creating release for: $chart_name"
+
+              gh release create "$chart_name" "$package" \
+                --title "$chart_name" \
+                --notes "Helm chart package for $chart_name" \
+                --latest=false
+
+              echo "✅ Released: $chart_name"
+            fi
+          done
         env:
-          CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
-        with:
-          charts_dir: charts
-          skip_packaging: true
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Generate Helm Repository Index
         run: |
