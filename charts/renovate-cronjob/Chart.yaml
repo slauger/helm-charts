@@ -1,0 +1,20 @@
+apiVersion: v2
+name: renovate-cronjob
+description: Scheduled Renovate bot for automated dependency updates
+type: application
+version: 0.1.0
+appVersion: "latest"
+keywords:
+  - renovate
+  - dependencies
+  - automation
+  - cronjob
+  - github
+  - gitlab
+home: https://github.com/slauger/helm-charts
+sources:
+  - https://github.com/slauger/helm-charts
+  - https://github.com/renovatebot/renovate
+maintainers:
+  - name: Simon Lauger
+    email: simon@lauger.de

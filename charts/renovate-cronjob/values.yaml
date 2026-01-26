@@ -1,0 +1,38 @@
+---
+# Renovate container image
+image: docker.io/renovate/renovate:latest
+
+# Optional service account name
+serviceaccount: ""
+
+# Renovate jobs configuration
+# Each job runs as a separate CronJob
+jobs:
+  # Example: GitHub repositories
+  - name: github-example
+    # Secret containing the access token (key: password)
+    secretName: github-credentials
+    # ConfigMap key for Renovate configuration
+    configName: config-github.js
+    # Cron schedule (weekdays at 10:00 AM)
+    schedule: "0 10 * * 1-5"
+    # Enable or disable this job
+    enabled: true
+    # Git platform (defaults to github)
+    platform: github
+    # List of repositories to process
+    repositories:
+      - myorg/repo1
+      - myorg/repo2
+      - myorg/repo3
+
+  # Example: GitLab repositories
+  - name: gitlab-example
+    secretName: gitlab-credentials
+    configName: config-gitlab.js
+    schedule: "0 11 * * 1-5"
+    enabled: false
+    platform: gitlab
+    repositories:
+      - mygroup/project1
+      - mygroup/project2

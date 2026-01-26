@@ -1,0 +1,30 @@
+{{- range $job := .Values.jobs }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $.Release.Name }}-config-{{ $job.name }}
+  namespace: renovate
+data:
+  config-github.js: |
+    module.exports = {
+      "platform": "github",
+      "extends": [
+        "config:recommended"
+      ],
+      "timezone": "Europe/Berlin",
+      "automerge": false,
+      "labels": ["dependencies"]
+    }
+  config-gitlab.js: |
+    module.exports = {
+      "platform": "gitlab",
+      "endpoint": "https://gitlab.example.com/api/v4/",
+      "extends": [
+        "config:recommended"
+      ],
+      "timezone": "Europe/Berlin",
+      "automerge": false,
+      "labels": ["dependencies"]
+    }
+{{ end }}

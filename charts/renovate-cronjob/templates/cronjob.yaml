@@ -1,0 +1,61 @@
+{{- range $job := .Values.jobs }}
+---
+kind: CronJob
+apiVersion: batch/v1
+metadata:
+  name: {{ $.Release.Name }}-cronjob-{{ $job.name }}
+  namespace: renovate
+spec:
+  schedule: '{{ $job.schedule }}'
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+{{ if $job.enabled }}
+  suspend: false
+{{ else }}
+  suspend: true
+{{ end }}
+  jobTemplate:
+    metadata:
+      creationTimestamp: null
+    spec:
+      backoffLimit: 0
+      template:
+        metadata:
+          creationTimestamp: null
+        spec:
+{{- if ne $.Values.serviceaccount "" }}
+          serviceAccountName: {{ $.Values.serviceaccount }}
+{{- end }}
+          restartPolicy: Never
+          containers:
+            - name: renovate
+              image: '{{ $.Values.image }}'
+              args:
+              - /bin/sh
+              - -c
+              - renovate
+              env:
+                - name: "RENOVATE_TOKEN"
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ $job.secretName }}
+                      key: password
+                - name: "GITHUB_COM_TOKEN"
+                  valueFrom:
+                    secretKeyRef:
+                      name: github-credentials
+                      key: password
+                - name: "RENOVATE_REPOSITORIES"
+                  value: "{{ join "," $job.repositories }}"
+                - name: "LOG_LEVEL"
+                  value: "debug"
+              volumeMounts:
+                - name: renovate-config
+                  mountPath: /usr/src/app/config.js
+                  subPath: {{ $job.configName }}
+          volumes:
+            - name: renovate-config
+              configMap:
+                name: {{ $.Release.Name }}-config-{{ $job.name }}
+{{ end }}
