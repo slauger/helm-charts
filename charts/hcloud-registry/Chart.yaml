@@ -2,7 +2,7 @@ apiVersion: v2
 name: hcloud-registry
 description: Docker Registry v2 with Hetzner Cloud S3 storage backend
 type: application
-version: 0.1.0
+version: 0.1.1
 appVersion: "2.8.3"
 keywords:
   - docker
