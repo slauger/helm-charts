@@ -1,0 +1,21 @@
+apiVersion: v2
+name: hugo-nginx
+description: Generic Helm chart for deploying Hugo static sites with nginx
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+keywords:
+  - hugo
+  - nginx
+  - static-site
+  - website
+home: https://github.com/slauger/helm-charts
+sources:
+  - https://github.com/slauger/helm-charts
+  - https://gohugo.io
+  - https://nginx.org
+maintainers:
+  - name: Simon Lauger
+    email: simon@lauger.de
+annotations:
+  category: Website
