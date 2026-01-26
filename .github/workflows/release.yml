@@ -4,8 +4,6 @@ on:
   push:
     branches:
       - main
-    paths:
-      - 'charts/**'
   workflow_dispatch:
 
 permissions:
@@ -76,6 +74,10 @@ jobs:
         run: |
           mkdir -p .cr-index
           helm repo index .cr-release-packages --url https://github.com/slauger/helm-charts/releases/download
+
+          # Fix URLs to include tag directory: /download/TAG/ASSET instead of /download/ASSET
+          sed -i 's|releases/download/\([^/]*\)\.tgz|releases/download/\1/\1.tgz|g' .cr-release-packages/index.yaml
+
           cp .cr-release-packages/index.yaml .cr-index/index.yaml
 
       - name: Upload Pages Artifact
