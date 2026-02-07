@@ -37,9 +37,9 @@ spec:
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
         {{- end }}
         {{- if typeIs "string" .Values.image }}
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: {{ .Values.imagePullPolicy | default "IfNotPresent" }}
         {{- else }}
-        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        imagePullPolicy: {{ .Values.image.pullPolicy | default "IfNotPresent" }}
         {{- end }}
         ports:
         - name: http

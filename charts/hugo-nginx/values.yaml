@@ -2,13 +2,12 @@
 # This chart deploys a Hugo static site served by nginx
 
 # Image configuration
-image:
-  # Container image repository
-  repository: myapp
-  # Image pull policy
-  pullPolicy: IfNotPresent
-  # Image tag (defaults to chart appVersion if not specified)
-  tag: "latest"
+# Can be either a string (e.g., "myapp:latest" or "myapp:v1.0.0@sha256:...")
+# or an object with repository, tag, and pullPolicy fields
+image: "myapp:latest"
+
+# Image pull policy (only used when image is a string)
+imagePullPolicy: IfNotPresent
 
 # Image pull secrets
 imagePullSecrets: []
