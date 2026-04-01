@@ -1,0 +1,11 @@
+endpoints: []
+  # - name: my-dns
+  #   records:
+  #     - dnsName: example.com
+  #       recordType: A
+  #       targets:
+  #         - 1.2.3.4
+  #     - dnsName: www.example.com
+  #       recordType: CNAME
+  #       targets:
+  #         - example.com

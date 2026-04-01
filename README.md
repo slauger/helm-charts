@@ -2,6 +2,32 @@
 
 Collection of Helm charts for Kubernetes deployments.
 
+## ✨ Features
+
+- 📦 **Ready-to-use Charts** — Generic, reusable Helm charts for common Kubernetes patterns
+- 🔐 **TLS Certificate Management** — Declarative cert-manager Certificate resources via `certificate` chart
+- 🌐 **DNS Record Management** — Declarative ExternalDNS DNSEndpoint resources via `dns-endpoint` chart
+- 🚀 **Flexible Deployments** — Simple and advanced deployment charts with HPA, services, and ingress
+- 🏗️ **Hugo Static Sites** — Production-ready Hugo sites served with nginx
+- ☁️ **Hetzner Cloud Integration** — Private Docker registry with Hetzner S3 backend
+- 🔄 **Automated Publishing** — Charts are automatically packaged and published via GitHub Actions
+- 📋 **Helm Repository** — Hosted on GitHub Pages, ready to add with `helm repo add`
+
+## Available Charts
+
+| Chart | Description |
+|-------|-------------|
+| [certificate](charts/certificate/) | Generic cert-manager Certificate resources |
+| [dns-endpoint](charts/dns-endpoint/) | Generic ExternalDNS DNSEndpoint resources |
+| [deployment](charts/deployment/) | Kubernetes Deployment with service, ingress, and HPA |
+| [deployment-simple](charts/deployment-simple/) | Simplified Kubernetes Deployment |
+| [hugo-nginx](charts/hugo-nginx/) | Hugo static site served with nginx |
+| [hcloud-registry](charts/hcloud-registry/) | Private Docker registry with Hetzner S3 backend |
+| [openshift-autoupdate](charts/openshift-autoupdate/) | OpenShift automatic update CronJob |
+| [openshift-cacheclear](charts/openshift-cacheclear/) | OpenShift cache clearing CronJob |
+| [openshift-ldap-sync](charts/openshift-ldap-sync/) | OpenShift LDAP synchronization CronJob |
+| [renovate-cronjob](charts/renovate-cronjob/) | Renovate bot as Kubernetes CronJob |
+
 ## Usage
 
 ### Add Helm Repository
