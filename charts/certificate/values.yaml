@@ -1,0 +1,7 @@
+certificates: []
+  # - name: my-tls
+  #   hosts:
+  #     - example.com
+  #     - www.example.com
+  #   issuer: letsencrypt-prod
+  #   kind: ClusterIssuer  # optional, defaults to ClusterIssuer
