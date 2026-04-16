@@ -1,0 +1,22 @@
+apiVersion: v2
+name: openshift-virtualmachine
+description: KubeVirt VirtualMachine and VirtualMachinePool resources for OpenShift Virtualization
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+
+maintainers:
+  - name: Simon Lauger
+    email: simon@lauger.de
+    url: https://lauger.de
+
+keywords:
+  - openshift
+  - virtualization
+  - kubevirt
+  - virtualmachine
+  - vm
+
+home: https://github.com/slauger/helm-charts
+sources:
+  - https://github.com/slauger/helm-charts

@@ -1,0 +1,128 @@
+# Number of VM replicas. If > 1, a VirtualMachinePool is created instead of a VirtualMachine.
+replicas: 1
+
+# Run strategy for the VM (Always, RerunOnFailure, Manual, Halted, Once)
+runStrategy: Always
+
+# --- Instancetype (optional, modern approach) ---
+# When set, takes precedence over domain.resources and domain.cpu.
+instancetype: {}
+  # name: u1.medium
+  # kind: VirtualMachineClusterInstancetype
+
+# --- Preference (optional, modern approach) ---
+preference: {}
+  # name: rhel.9
+  # kind: VirtualMachineClusterPreference
+
+# --- Domain ---
+domain:
+  # Resources (only used when instancetype is NOT set)
+  resources:
+    requests:
+      memory: 2Gi
+  # CPU (only used when instancetype is NOT set)
+  cpu:
+    cores: 2
+    sockets: 1
+    threads: 1
+  machine: {}
+    # type: q35
+  firmware: {}
+    # bootloader:
+    #   efi:
+    #     secureBoot: true
+  features: {}
+    # acpi: {}
+    # smm:
+    #   enabled: true
+  devices:
+    disks: []
+      # - name: rootdisk
+      #   disk:
+      #     bus: virtio
+      #   bootOrder: 1
+    interfaces:
+      - name: default
+        masquerade: {}
+    # Enable virtio RNG device
+    rng: false
+
+# --- Volumes ---
+volumes: []
+  # - name: rootdisk
+  #   dataVolume:
+  #     name: rootdisk
+  # - name: cloudinitdisk
+  #   cloudInitNoCloud:
+  #     userData: |
+  #       #cloud-config
+  #       user: cloud-user
+
+# --- Networks ---
+networks:
+  - name: default
+    pod: {}
+
+# --- DataVolume Templates (inline, lifecycle tied to VM) ---
+dataVolumeTemplates: []
+  # - metadata:
+  #     name: rootdisk
+  #   spec:
+  #     storage:
+  #       accessModes:
+  #         - ReadWriteOnce
+  #       resources:
+  #         requests:
+  #           storage: 30Gi
+  #     source:
+  #       pvc:
+  #         namespace: openshift-virtualization-os-images
+  #         name: rhel9
+
+# --- Cloud-Init Convenience ---
+# When enabled, automatically adds a cloudinitdisk volume and disk entry.
+cloudInit:
+  enabled: false
+  # type: noCloud or configDrive
+  type: noCloud
+  userData: ""
+    # |
+    #   #cloud-config
+    #   user: cloud-user
+    #   password: changeme
+    #   chpasswd:
+    #     expire: false
+  networkData: ""
+
+# --- Access Credentials (SSH key injection etc.) ---
+accessCredentials: []
+  # - sshPublicKey:
+  #     source:
+  #       secret:
+  #         secretName: my-ssh-key
+  #     propagationMethod:
+  #       noCloud: {}
+
+# --- Service (optional) ---
+service:
+  enabled: false
+  type: ClusterIP
+  ports: []
+    # - name: ssh
+    #   port: 22
+    #   targetPort: 22
+    #   protocol: TCP
+
+# --- Scheduling ---
+evictionStrategy: LiveMigrate
+terminationGracePeriodSeconds: 180
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# --- Metadata ---
+labels: {}
+annotations: {}
+nameOverride: ""
+fullnameOverride: ""

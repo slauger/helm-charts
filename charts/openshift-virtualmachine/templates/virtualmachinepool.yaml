@@ -1,0 +1,19 @@
+{{- if gt (int .Values.replicas) 1 }}
+apiVersion: pool.kubevirt.io/v1alpha1
+kind: VirtualMachinePool
+metadata:
+  name: {{ include "library.fullname" . }}
+  labels:
+    {{- include "library.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicas }}
+  selector:
+    matchLabels:
+      {{- include "library.selectorLabels" . | nindent 6 }}
+  virtualMachineTemplate:
+    metadata:
+      labels:
+        {{- include "library.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- include "library.vmSpec" . | nindent 6 }}
+{{- end }}

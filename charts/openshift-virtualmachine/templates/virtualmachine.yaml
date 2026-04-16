@@ -1,0 +1,10 @@
+{{- if le (int .Values.replicas) 1 }}
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: {{ include "library.fullname" . }}
+  labels:
+    {{- include "library.labels" . | nindent 4 }}
+spec:
+  {{- include "library.vmSpec" . | nindent 2 }}
+{{- end }}
