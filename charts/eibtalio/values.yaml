@@ -28,10 +28,12 @@ frontend:
 ingress:
   enabled: false
   className: ""
-  host: ""
+  frontendHost: ""
+  backendHost: ""
   tls:
     enabled: false
-    secretName: ""
+    frontendSecretName: ""
+    backendSecretName: ""
 
 postgresql:
   instances: 1
