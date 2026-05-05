@@ -1,0 +1,16 @@
+apiVersion: v2
+name: eibtalio
+description: Eibtalio PMS — Hotel Management System for Kinderhotels
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+keywords:
+  - eibtalio
+  - pms
+  - hotel
+  - fastapi
+  - cloudnative-pg
+home: https://github.com/slauger/helm-charts
+maintainers:
+  - name: Simon Lauger
+    email: simon@lauger.de

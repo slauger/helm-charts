@@ -1,0 +1,37 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "eibtalio.fullname" . }}-init
+  labels:
+    {{- include "eibtalio.labels" . | nindent 4 }}
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-weight: "10"
+    helm.sh/hook-delete-policy: before-hook-creation
+spec:
+  backoffLimit: 3
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: init
+          image: {{ .Values.backend.image }}
+          command: ["sh", "-c", "alembic upgrade head && python -m eibtalio.seed"]
+          env:
+            - name: EIBTALIO_DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "eibtalio.fullname" . }}-db-app
+                  key: uri
+            - name: EIBTALIO_JWT_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "eibtalio.fullname" . }}-secrets
+                  key: jwt-secret-key
+            - name: EIBTALIO_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "eibtalio.fullname" . }}-secrets
+                  key: admin-password
+            - name: EIBTALIO_DEBUG
+              value: "true"

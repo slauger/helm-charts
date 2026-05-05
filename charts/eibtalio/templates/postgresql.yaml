@@ -1,0 +1,14 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: {{ include "eibtalio.fullname" . }}-db
+  labels:
+    {{- include "eibtalio.labels" . | nindent 4 }}
+spec:
+  instances: {{ .Values.postgresql.instances }}
+  storage:
+    size: {{ .Values.postgresql.storage.size }}
+  bootstrap:
+    initdb:
+      database: eibtalio
+      owner: eibtalio

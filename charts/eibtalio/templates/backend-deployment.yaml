@@ -1,0 +1,64 @@
+{{- if not .Values.backend.image }}
+{{- fail "backend.image is required" }}
+{{- end }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "eibtalio.fullname" . }}-backend
+  labels:
+    {{- include "eibtalio.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backend
+spec:
+  replicas: {{ .Values.backend.replicas }}
+  selector:
+    matchLabels:
+      {{- include "eibtalio.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: backend
+  template:
+    metadata:
+      labels:
+        {{- include "eibtalio.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: backend
+    spec:
+      containers:
+        - name: backend
+          image: {{ .Values.backend.image }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.backend.port }}
+          env:
+            - name: EIBTALIO_DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "eibtalio.fullname" . }}-db-app
+                  key: uri
+            - name: EIBTALIO_JWT_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "eibtalio.fullname" . }}-secrets
+                  key: jwt-secret-key
+            - name: EIBTALIO_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "eibtalio.fullname" . }}-secrets
+                  key: admin-password
+            - name: EIBTALIO_DEBUG
+              value: {{ .Values.env.debug | quote }}
+            {{- if .Values.env.corsOrigins }}
+            - name: EIBTALIO_CORS_ORIGINS
+              value: {{ .Values.env.corsOrigins | quote }}
+            {{- end }}
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 30
+          resources:
+            {{- toYaml .Values.backend.resources | nindent 12 }}
