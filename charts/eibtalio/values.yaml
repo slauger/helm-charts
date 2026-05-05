@@ -1,4 +1,6 @@
 ---
+imagePullSecrets: []
+
 backend:
   # Required — no defaults, must be set
   image: ""
