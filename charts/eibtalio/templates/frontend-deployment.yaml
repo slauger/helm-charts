@@ -27,6 +27,10 @@ spec:
       containers:
         - name: frontend
           image: {{ .Values.frontend.image }}
+          env:
+            # Backend-Service für den nginx-Proxy (/api,/auth) im Frontend-Image (same-origin).
+            - name: BACKEND_UPSTREAM
+              value: "{{ include "eibtalio.fullname" . }}-backend:{{ .Values.backend.port }}"
           ports:
             - name: http
               containerPort: {{ .Values.frontend.port }}
