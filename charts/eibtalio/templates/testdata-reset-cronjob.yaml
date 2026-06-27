@@ -1,0 +1,53 @@
+{{- if .Values.testdataReset.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "eibtalio.fullname" . }}-testdata-reset
+  labels:
+    {{- include "eibtalio.labels" . | nindent 4 }}
+spec:
+  # Nächtlicher Reset der Testdaten (nur QA/Demo) — erzeugt frische Anreisen/Abreisen für "heute".
+  schedule: {{ .Values.testdataReset.schedule | quote }}
+  timeZone: {{ .Values.testdataReset.timeZone | quote }}
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 300
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        metadata:
+          labels:
+            {{- include "eibtalio.selectorLabels" . | nindent 12 }}
+            app.kubernetes.io/component: testdata-reset
+        spec:
+          restartPolicy: Never
+          {{- with .Values.imagePullSecrets }}
+          imagePullSecrets:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          containers:
+            - name: testdata-reset
+              image: {{ .Values.backend.image }}
+              # Stammdaten/Katalog idempotent sicherstellen, dann Buchungen/Gäste/Zahlungen neu seeden.
+              command: ["sh", "-c", "python -m eibtalio.seed && python -m eibtalio.seed_testdata --reset"]
+              env:
+                - name: EIBTALIO_DATABASE_URL
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ include "eibtalio.fullname" . }}-db-app
+                      key: uri
+                - name: EIBTALIO_JWT_SECRET_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ include "eibtalio.fullname" . }}-secrets
+                      key: jwt-secret-key
+                - name: EIBTALIO_ADMIN_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ include "eibtalio.fullname" . }}-secrets
+                      key: admin-password
+                - name: EIBTALIO_DEBUG
+                  value: "true"
+{{- end }}
