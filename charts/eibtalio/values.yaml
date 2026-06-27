@@ -42,6 +42,12 @@ postgresql:
   storage:
     size: 5Gi
 
+# Nächtlicher Testdaten-Reset (nur für QA/Demo-Umgebungen aktivieren!)
+testdataReset:
+  enabled: false
+  schedule: "0 2 * * *"
+  timeZone: "Europe/Berlin"
+
 env:
   debug: "false"
   corsOrigins: ""
