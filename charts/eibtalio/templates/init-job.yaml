@@ -5,7 +5,10 @@ metadata:
   labels:
     {{- include "eibtalio.labels" . | nindent 4 }}
   annotations:
-    helm.sh/hook: post-install,post-upgrade
+    # post-install: DB-Cluster existiert erst nach dem Install → danach migrieren+seeden.
+    # pre-upgrade: bei Updates erst migrieren, DANN neue Pods rollen — sonst bedienen neue
+    #   Pods Requests gegen ein noch nicht migriertes Schema (500er-Fenster).
+    helm.sh/hook: post-install,pre-upgrade
     helm.sh/hook-weight: "10"
     helm.sh/hook-delete-policy: before-hook-creation
 spec:
