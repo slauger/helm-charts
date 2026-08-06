@@ -52,6 +52,21 @@ spec:
             - name: EIBTALIO_CORS_ORIGINS
               value: {{ .Values.env.corsOrigins | quote }}
             {{- end }}
+            {{- if .Values.invoiceNinja.url }}
+            - name: EIBTALIO_INVOICE_NINJA_URL
+              value: {{ .Values.invoiceNinja.url | quote }}
+            - name: EIBTALIO_INVOICE_NINJA_COUNTRY_ID
+              value: {{ .Values.invoiceNinja.countryId | quote }}
+            - name: EIBTALIO_INVOICE_NINJA_SYNC_INTERVAL_SECONDS
+              value: {{ .Values.invoiceNinja.syncIntervalSeconds | quote }}
+            {{- end }}
+            {{- if .Values.invoiceNinja.tokenSecret.name }}
+            - name: EIBTALIO_INVOICE_NINJA_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.invoiceNinja.tokenSecret.name }}
+                  key: {{ .Values.invoiceNinja.tokenSecret.key }}
+            {{- end }}
           readinessProbe:
             httpGet:
               path: /health
