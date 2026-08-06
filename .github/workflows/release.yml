@@ -11,6 +11,12 @@ permissions:
   pages: write
   id-token: write
 
+# Nur ein Pages-Deployment gleichzeitig — sonst bricht GitHub das Deployment mit
+# "Deployment cancelled" ab (Ursache des fehlgeschlagenen Index-Updates).
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
 jobs:
   release:
     runs-on: ubuntu-latest
