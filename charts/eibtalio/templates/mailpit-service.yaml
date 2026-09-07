@@ -1,0 +1,28 @@
+{{- if .Values.mailpit.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "eibtalio.fullname" . }}-mailpit
+  labels:
+    {{- include "eibtalio.labels" . | nindent 4 }}
+    app.kubernetes.io/component: mailpit
+spec:
+  # **Bewusst nur clusterintern.** Die Weboberflaeche zeigt jede abgefangene Mail im Klartext,
+  # samt Gastnamen und Belegen. Wer hineinsehen will, nimmt
+  #   kubectl -n <ns> port-forward svc/<release>-mailpit 8025:8025
+  # Ein oeffentlicher Ingress waere ein Postfach ohne Schloss.
+  type: ClusterIP
+  selector:
+    {{- include "eibtalio.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: mailpit
+  ports:
+    - name: http
+      port: 8025
+      targetPort: http
+    - name: smtp
+      port: 1025
+      targetPort: smtp
+    - name: pop3
+      port: 1110
+      targetPort: pop3
+{{- end }}

@@ -1,0 +1,62 @@
+{{- if .Values.mailpit.enabled }}
+# Mailpit faengt in QA/Demo den ausgehenden Mailverkehr ab.
+#
+# **Kein Zusatz, sondern ein Riegel.** Ohne ihn steht die Wahl zwischen "kein Mailversand" und
+# "echtes SMTP" - und echtes SMTP an einer Umgebung, deren Testdaten jede Nacht neu entstehen,
+# schickt Post an erfundene Empfaenger. Mailpit hat keinen echten MX: Was hier hineingeht,
+# kommt nirgends an.
+#
+# Der Dienst haelt seine Mails im Speicher und ueberlebt einen Neustart nicht - fuer eine
+# Wegwerf-Umgebung ist das richtig so, ein PVC waere Ballast.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "eibtalio.fullname" . }}-mailpit
+  labels:
+    {{- include "eibtalio.labels" . | nindent 4 }}
+    app.kubernetes.io/component: mailpit
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "eibtalio.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: mailpit
+  template:
+    metadata:
+      labels:
+        {{- include "eibtalio.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: mailpit
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: mailpit
+          image: {{ .Values.mailpit.image }}
+          ports:
+            - name: http
+              containerPort: 8025
+            - name: smtp
+              containerPort: 1025
+            - name: pop3
+              containerPort: 1110
+          env:
+            # POP3 fuer die Posteingangs-Tests (ADR 0009), gleiche Zugangsdaten wie lokal.
+            - name: MP_POP3_AUTH
+              value: {{ .Values.mailpit.pop3Auth | quote }}
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /livez
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 30
+          resources:
+            {{- toYaml .Values.mailpit.resources | nindent 12 }}
+{{- end }}

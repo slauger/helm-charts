@@ -52,6 +52,25 @@ render:
       cpu: 1000m
       memory: 768Mi
 
+# Mailpit fängt in QA/Demo den ausgehenden Mailverkehr ab — nur dort einschalten. Ohne ihn
+# bleibt die Wahl zwischen "kein Mailversand" und echtem SMTP, und echtes SMTP an einer
+# Umgebung mit erfundenen Gästen schickt Post an erfundene Empfänger.
+# Nur clusterintern erreichbar; zum Hineinsehen `kubectl port-forward svc/<release>-mailpit 8025`.
+# **Der Host allein genügt nicht**: Die Mail-Einstellungen liegen in der Datenbank, nicht in der
+# Umgebung — sie zeigen erst nach einer Konfiguration in der Oberfläche hierher.
+mailpit:
+  enabled: false
+  image: axllent/mailpit:latest
+  # POP3-Zugang für die Posteingangs-Tests; dieselben Zugangsdaten wie lokal.
+  pop3Auth: "dev:dev"
+  resources:
+    requests:
+      cpu: 10m
+      memory: 32Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+
 ingress:
   enabled: false
   className: ""
