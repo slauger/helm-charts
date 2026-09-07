@@ -45,6 +45,14 @@ spec:
             # POP3 fuer die Posteingangs-Tests (ADR 0009), gleiche Zugangsdaten wie lokal.
             - name: MP_POP3_AUTH
               value: {{ .Values.mailpit.pop3Auth | quote }}
+            {{- if .Values.mailpit.ingress.enabled }}
+            # Sobald die Oberflaeche oeffentlich haengt, kommt sie nicht ohne Anmeldung ins Netz.
+            - name: MP_UI_AUTH
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "eibtalio.fullname" . }}-mailpit
+                  key: ui-auth
+            {{- end }}
           readinessProbe:
             httpGet:
               path: /readyz

@@ -55,7 +55,8 @@ render:
 # Mailpit fängt in QA/Demo den ausgehenden Mailverkehr ab — nur dort einschalten. Ohne ihn
 # bleibt die Wahl zwischen "kein Mailversand" und echtem SMTP, und echtes SMTP an einer
 # Umgebung mit erfundenen Gästen schickt Post an erfundene Empfänger.
-# Nur clusterintern erreichbar; zum Hineinsehen `kubectl port-forward svc/<release>-mailpit 8025`.
+# Ohne eigenen Ingress nur clusterintern; zum Hineinsehen dann
+# `kubectl port-forward svc/<release>-mailpit 8025`.
 # **Der Host allein genügt nicht**: Die Mail-Einstellungen liegen in der Datenbank, nicht in der
 # Umgebung — sie zeigen erst nach einer Konfiguration in der Oberfläche hierher.
 mailpit:
@@ -63,6 +64,19 @@ mailpit:
   image: axllent/mailpit:latest
   # POP3-Zugang für die Posteingangs-Tests; dieselben Zugangsdaten wie lokal.
   pop3Auth: "dev:dev"
+  # Eigener Host für die Weboberfläche. **Nur mit Anmeldung** — Mailpit zeigt sonst jede
+  # abgefangene Mail im Klartext, samt Gastnamen und Belegen. Ohne `uiAuthSealed` bricht das
+  # Rendern deshalb ab, statt ein offenes Postfach ins Netz zu stellen.
+  ingress:
+    enabled: false
+    host: ""
+    tls:
+      enabled: false
+      secretName: ""
+  # `user:passwort` für MP_UI_AUTH, versiegelt für Namespace und Secret `<release>-mailpit`:
+  #   printf '%s' "$USER:$PASS" | kubeseal --raw --namespace <ns> --name <release>-mailpit \
+  #     --controller-name sealed-secrets --controller-namespace sealed-secrets
+  uiAuthSealed: ""
   resources:
     requests:
       cpu: 10m
@@ -71,15 +85,17 @@ mailpit:
       cpu: 200m
       memory: 128Mi
 
+# **Ein Host je Kunde** (ADR 0061): Die Oberfläche unter `/`, die API unter `/api/…`, kein
+# eigener API-Name. Ein zweiter Weg zu denselben Daten wäre eine zweite Tür, die mitgehärtet
+# und mitüberwacht werden müsste.
 ingress:
   enabled: false
   className: ""
-  frontendHost: ""
-  backendHost: ""
+  # Required when enabled — no default, must be set
+  host: ""
   tls:
     enabled: false
-    frontendSecretName: ""
-    backendSecretName: ""
+    secretName: ""
 
 postgresql:
   instances: 1

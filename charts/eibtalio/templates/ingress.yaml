@@ -1,11 +1,22 @@
 {{- if .Values.ingress.enabled }}
+{{- if not .Values.ingress.host }}
+{{- fail "ingress.host is required when ingress.enabled is true" }}
+{{- end }}
+# **Ein Host, zwei Pfade** (ADR 0061). Vorher lief neben der Anwendung ein zweiter Ingress fuer
+# die API - dieselben Daten unter eigenem Namen, ohne Sicherheits-Header und mit offener
+# Schnittstellenbeschreibung. Eine zweite Tuer, die niemand benutzte, aber jeder haette
+# mithaerten muessen.
+#
+# Die Aufteilung ist die, die das Frontend ohnehin nutzt: `/api/` zum Backend, alles andere zur
+# Oberflaeche. Damit bleibt same-origin der Normalfall - das Sitzungs-Cookie
+# (SameSite=Strict, HttpOnly) braucht keine Ausnahme, und CORS ist nur noch fuer die
+# oeffentliche Flaeche ein Thema.
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: {{ include "eibtalio.fullname" . }}-frontend
+  name: {{ include "eibtalio.fullname" . }}
   labels:
     {{- include "eibtalio.labels" . | nindent 4 }}
-    app.kubernetes.io/component: frontend
 spec:
   {{- if .Values.ingress.className }}
   ingressClassName: {{ .Values.ingress.className }}
@@ -13,47 +24,27 @@ spec:
   {{- if .Values.ingress.tls.enabled }}
   tls:
     - hosts:
-        - {{ .Values.ingress.frontendHost }}
-      secretName: {{ .Values.ingress.tls.frontendSecretName | default (printf "%s-frontend-tls" (include "eibtalio.fullname" .)) }}
+        - {{ .Values.ingress.host }}
+      secretName: {{ .Values.ingress.tls.secretName | default (printf "%s-tls" (include "eibtalio.fullname" .)) }}
   {{- end }}
   rules:
-    - host: {{ .Values.ingress.frontendHost }}
+    - host: {{ .Values.ingress.host }}
       http:
         paths:
+          # Zuerst der spezifischere Pfad. Traefik waehlt zwar nach Laenge, aber die Reihenfolge
+          # hier macht die Absicht lesbar - und nicht jeder Controller sortiert gleich.
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "eibtalio.fullname" . }}-backend
+                port:
+                  name: http
           - path: /
             pathType: Prefix
             backend:
               service:
                 name: {{ include "eibtalio.fullname" . }}-frontend
-                port:
-                  name: http
----
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: {{ include "eibtalio.fullname" . }}-backend
-  labels:
-    {{- include "eibtalio.labels" . | nindent 4 }}
-    app.kubernetes.io/component: backend
-spec:
-  {{- if .Values.ingress.className }}
-  ingressClassName: {{ .Values.ingress.className }}
-  {{- end }}
-  {{- if .Values.ingress.tls.enabled }}
-  tls:
-    - hosts:
-        - {{ .Values.ingress.backendHost }}
-      secretName: {{ .Values.ingress.tls.backendSecretName | default (printf "%s-backend-tls" (include "eibtalio.fullname" .)) }}
-  {{- end }}
-  rules:
-    - host: {{ .Values.ingress.backendHost }}
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: {{ include "eibtalio.fullname" . }}-backend
                 port:
                   name: http
 {{- end }}
