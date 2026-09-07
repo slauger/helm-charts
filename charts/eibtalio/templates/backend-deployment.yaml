@@ -58,6 +58,16 @@ spec:
             - name: EIBTALIO_CORS_ORIGINS
               value: {{ .Values.env.corsOrigins | quote }}
             {{- end }}
+            {{- if .Values.mailpit.enabled }}
+            # Der Vorgabewert im Code ist `mailpit` - der Compose-Dienstname. Im Cluster heisst
+            # der Dienst `<release>-mailpit`, dort stimmt die Vorgabe also nie. Ohne diese Zeile
+            # traegt der Seed einen Host ein, den es nicht gibt, und niemand merkt es: Der
+            # Versand scheitert still, ohne Fehler in der Oberflaeche.
+            - name: EIBTALIO_MAIL_DEV_HOST
+              value: {{ include "eibtalio.fullname" . }}-mailpit
+            - name: EIBTALIO_MAIL_DEV_PORT
+              value: "1025"
+            {{- end }}
             {{- if .Values.render.enabled }}
             # Der Renderer ist die letzte Stufe, nicht die Voraussetzung: Ohne ihn entstehen
             # Belege weiterhin, nur eben kein PDF. Fehlt die Adresse, antwortet jeder
