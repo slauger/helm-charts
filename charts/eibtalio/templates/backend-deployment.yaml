@@ -52,20 +52,18 @@ spec:
             - name: EIBTALIO_CORS_ORIGINS
               value: {{ .Values.env.corsOrigins | quote }}
             {{- end }}
-            {{- if .Values.invoiceNinja.url }}
-            - name: EIBTALIO_INVOICE_NINJA_URL
-              value: {{ .Values.invoiceNinja.url | quote }}
-            - name: EIBTALIO_INVOICE_NINJA_COUNTRY_ID
-              value: {{ .Values.invoiceNinja.countryId | quote }}
-            - name: EIBTALIO_INVOICE_NINJA_SYNC_INTERVAL_SECONDS
-              value: {{ .Values.invoiceNinja.syncIntervalSeconds | quote }}
-            {{- end }}
-            {{- if .Values.invoiceNinja.tokenSecret.name }}
-            - name: EIBTALIO_INVOICE_NINJA_TOKEN
+            {{- if .Values.render.enabled }}
+            # Der Renderer ist die letzte Stufe, nicht die Voraussetzung: Ohne ihn entstehen
+            # Belege weiterhin, nur eben kein PDF. Fehlt die Adresse, antwortet jeder
+            # PDF-Abruf mit "Beleg wurde abgelehnt" - einer Meldung, die zur Korrektur der
+            # Empfaengerdaten raet, waehrend in Wahrheit nur der Dienst fehlt.
+            - name: EIBTALIO_RENDER_URL
+              value: http://{{ include "eibtalio.fullname" . }}-render:{{ .Values.render.port }}
+            - name: EIBTALIO_RENDER_TOKEN
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.invoiceNinja.tokenSecret.name }}
-                  key: {{ .Values.invoiceNinja.tokenSecret.key }}
+                  name: {{ include "eibtalio.fullname" . }}-render
+                  key: token
             {{- end }}
           readinessProbe:
             httpGet:

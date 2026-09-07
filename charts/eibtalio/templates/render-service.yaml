@@ -1,0 +1,18 @@
+{{- if .Values.render.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "eibtalio.fullname" . }}-render
+  labels:
+    {{- include "eibtalio.labels" . | nindent 4 }}
+    app.kubernetes.io/component: render
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "eibtalio.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: render
+  ports:
+    - name: http
+      port: {{ .Values.render.port }}
+      targetPort: http
+{{- end }}

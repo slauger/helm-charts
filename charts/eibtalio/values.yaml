@@ -27,6 +27,25 @@ frontend:
       cpu: 200m
       memory: 128Mi
 
+# Der Beleg-Renderer (Container `eibtalio-render`). Das eigene Beleg-Backend fakturio erzeugt
+# die Belege selbst, aber nicht das PDF — dafür braucht es diesen Dienst. Er hält keine Daten
+# und bedient jedes Haus, deshalb genügt eine Instanz. Ist er aus, bleiben Belege und
+# Buchhaltung nutzbar; nur der PDF-Abruf scheitert.
+render:
+  enabled: false
+  # Required when enabled — no default, must be set
+  image: ""
+  replicas: 1
+  port: 8000
+  resources:
+    requests:
+      cpu: 100m
+      # WeasyPrint zeichnet über Pango; das Layout einer Seite braucht kurz spürbar Speicher.
+      memory: 192Mi
+    limits:
+      cpu: 1000m
+      memory: 768Mi
+
 ingress:
   enabled: false
   className: ""
@@ -51,12 +70,3 @@ testdataReset:
 env:
   debug: "false"
   corsOrigins: ""
-
-# Invoice-Ninja-Anbindung (Rechnungs-/Buchhaltungs-Backend). Aktiv, sobald tokenSecret gesetzt ist.
-invoiceNinja:
-  url: ""                       # z.B. http://invoiceninja.<namespace>.svc.cluster.local
-  countryId: "276"              # DE (ISO-3166-numeric), Default-Land für Ninja-Clients
-  syncIntervalSeconds: "300"    # periodischer Reconcile; 0 = aus
-  tokenSecret:
-    name: ""                    # Secret mit dem Ninja-API-Token (leer => nicht konfiguriert)
-    key: token
