@@ -17,6 +17,12 @@ spec:
       app.kubernetes.io/component: render
   template:
     metadata:
+      annotations:
+        # Aendert sich das Token, rollen **beide** Pods - Backend und Renderer teilen es sich,
+        # und ``secretKeyRef`` wird nur beim Start gelesen. Ohne diese Zeile rollte bei einer
+        # Rotation nur die Seite, deren Deployment sich sonst noch aenderte; die andere behielte
+        # das alte Token und jeder PDF-Abruf endete in 401.
+        checksum/render-token: {{ .Values.render.tokenSealed | sha256sum }}
       labels:
         {{- include "eibtalio.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: render

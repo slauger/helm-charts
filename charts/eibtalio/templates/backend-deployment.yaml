@@ -16,6 +16,12 @@ spec:
       app.kubernetes.io/component: backend
   template:
     metadata:
+      {{- if .Values.render.enabled }}
+      annotations:
+        # Siehe render-deployment.yaml: beide Seiten teilen das Token, beide muessen zusammen
+        # rollen, wenn es sich aendert.
+        checksum/render-token: {{ .Values.render.tokenSealed | sha256sum }}
+      {{- end }}
       labels:
         {{- include "eibtalio.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: backend

@@ -33,8 +33,14 @@ frontend:
 # Buchhaltung nutzbar; nur der PDF-Abruf scheitert.
 render:
   enabled: false
-  # Required when enabled — no default, must be set
+  # Required when enabled — no defaults, must be set
   image: ""
+  # Das geteilte Token zwischen Backend und Renderer, versiegelt für **diesen** Namespace und
+  # den Secret-Namen `<release>-render`:
+  #   printf '%s' "$TOKEN" | kubeseal --raw --namespace <ns> --name <release>-render \
+  #     --controller-name sealed-secrets --controller-namespace sealed-secrets
+  # Bewusst nicht im Chart gewürfelt — Begründung in templates/render-secret.yaml.
+  tokenSealed: ""
   replicas: 1
   port: 8000
   resources:
