@@ -1,0 +1,68 @@
+---
+imagePullSecrets: []
+
+backend:
+  # Required — no defaults, must be set
+  image: ""
+  replicas: 1
+  port: 8000
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+frontend:
+  # Required — no defaults, must be set
+  image: ""
+  replicas: 1
+  port: 80
+  resources:
+    requests:
+      cpu: 25m
+      memory: 32Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+
+# Das erste und einzige Konto. Shelve kennt keine offene Registrierung — eine persönliche
+# Bibliothek hat genau einen Zugang. Der Init-Job legt es beim ersten Deployment an; das
+# Passwort würfelt das Chart und legt es in `<release>-secrets` ab:
+#   kubectl -n <ns> get secret <release>-shelve-secrets \
+#     -o jsonpath='{.data.admin-password}' | base64 -d
+admin:
+  # Required — no default, must be set
+  email: ""
+  displayName: ""
+
+# Ein Host für Oberfläche und API. Ohne Ingress läuft alles nur clusterintern; zum
+# Hineinsehen dann `kubectl port-forward svc/<release>-shelve-frontend 8080:80`.
+ingress:
+  enabled: false
+  className: ""
+  # Required when enabled — no default, must be set
+  host: ""
+  tls:
+    enabled: false
+    secretName: ""
+
+# Cover liegen als Bytes in der Datenbank, nicht im Dateisystem — es gibt deshalb kein
+# PersistentVolume neben Postgres, und ein Backup des Clusters enthält die Bilder.
+postgresql:
+  instances: 1
+  storage:
+    size: 5Gi
+
+env:
+  debug: "false"
+  # Leer lassen, solange Oberfläche und API unter demselben Host liegen: dann ist jede
+  # Anfrage same-origin und CORS gar nicht beteiligt.
+  corsOrigins: ""
+  # Ohne Schlüssel antwortet Google Books 429, sobald das Kontingent der geteilten
+  # Ausgangsadresse erschöpft ist. Versiegelt für Namespace und Secret
+  # `<release>-google-books`:
+  #   printf '%s' "$KEY" | kubeseal --raw --namespace <ns> --name <release>-shelve-google-books \
+  #     --controller-name sealed-secrets --controller-namespace sealed-secrets
+  googleBooksApiKeySealed: ""

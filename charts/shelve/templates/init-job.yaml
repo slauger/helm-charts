@@ -1,0 +1,42 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "shelve.fullname" . }}-init
+  labels:
+    {{- include "shelve.labels" . | nindent 4 }}
+  annotations:
+    # post-install: den Datenbank-Cluster legt CNPG erst nach dem Install an, vorher gibt
+    #   es nichts zu migrieren.
+    # pre-upgrade: bei Updates erst migrieren, dann neue Pods rollen - sonst bedienen neue
+    #   Pods Anfragen gegen ein altes Schema.
+    helm.sh/hook: post-install,pre-upgrade
+    helm.sh/hook-weight: "10"
+    helm.sh/hook-delete-policy: before-hook-creation
+spec:
+  backoffLimit: 3
+  template:
+    spec:
+      restartPolicy: Never
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: init
+          image: {{ .Values.backend.image }}
+          # Das Konto wird nur beim ersten Mal angelegt; laeuft der Job erneut, meldet der
+          # Befehl "gibt es bereits" und setzt kein Passwort zurueck.
+          command:
+            - sh
+            - -c
+            - >-
+              alembic upgrade head &&
+              python -m shelve_api.createuser {{ required "admin.email is required" .Values.admin.email | quote }}
+              {{- if .Values.admin.displayName }} --name {{ .Values.admin.displayName | quote }}{{- end }}
+          env:
+            {{- include "shelve.backendEnv" . | nindent 12 }}
+            - name: SHELVE_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "shelve.fullname" . }}-secrets
+                  key: admin-password

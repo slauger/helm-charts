@@ -1,0 +1,14 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: {{ include "shelve.fullname" . }}-db
+  labels:
+    {{- include "shelve.labels" . | nindent 4 }}
+spec:
+  instances: {{ .Values.postgresql.instances }}
+  storage:
+    size: {{ .Values.postgresql.storage.size }}
+  bootstrap:
+    initdb:
+      database: shelve
+      owner: shelve

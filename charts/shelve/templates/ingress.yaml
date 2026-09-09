@@ -1,0 +1,45 @@
+{{- if .Values.ingress.enabled }}
+{{- if not .Values.ingress.host }}
+{{- fail "ingress.host is required when ingress.enabled is true" }}
+{{- end }}
+# Ein Host, zwei Ziele: die Oberflaeche unter `/`, die API unter `/api/`. Damit bleibt
+# alles same-origin - das Sitzungs-Cookie (HttpOnly, SameSite) braucht keine Ausnahme und
+# CORS ist kein Thema. Ein zweiter Host fuer die API waere eine zweite Tuer, die
+# mitgehaertet werden muesste.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "shelve.fullname" . }}
+  labels:
+    {{- include "shelve.labels" . | nindent 4 }}
+spec:
+  {{- if .Values.ingress.className }}
+  ingressClassName: {{ .Values.ingress.className }}
+  {{- end }}
+  {{- if .Values.ingress.tls.enabled }}
+  tls:
+    - hosts:
+        - {{ .Values.ingress.host }}
+      secretName: {{ .Values.ingress.tls.secretName | default (printf "%s-tls" (include "shelve.fullname" .)) }}
+  {{- end }}
+  rules:
+    - host: {{ .Values.ingress.host }}
+      http:
+        paths:
+          # Der spezifischere Pfad zuerst. Traefik waehlt nach Laenge, aber die Reihenfolge
+          # macht die Absicht lesbar - und nicht jeder Controller sortiert gleich.
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "shelve.fullname" . }}-backend
+                port:
+                  name: http
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "shelve.fullname" . }}-frontend
+                port:
+                  name: http
+{{- end }}

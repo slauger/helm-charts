@@ -1,0 +1,51 @@
+{{- if not .Values.backend.image }}
+{{- fail "backend.image is required" }}
+{{- end }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "shelve.fullname" . }}-backend
+  labels:
+    {{- include "shelve.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backend
+spec:
+  replicas: {{ .Values.backend.replicas }}
+  selector:
+    matchLabels:
+      {{- include "shelve.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: backend
+  template:
+    metadata:
+      labels:
+        {{- include "shelve.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: backend
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: backend
+          image: {{ .Values.backend.image }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.backend.port }}
+          env:
+            {{- include "shelve.backendEnv" . | nindent 12 }}
+          # /health antwortet ohne Datenbank, /health/ready fragt sie an. Als Liveness
+          # taugt nur die erste: eine kurz nicht erreichbare Datenbank darf den Prozess
+          # nicht neu starten lassen, sie macht ihn nur voruebergehend unbrauchbar.
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 30
+          resources:
+            {{- toYaml .Values.backend.resources | nindent 12 }}

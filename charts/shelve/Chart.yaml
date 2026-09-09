@@ -1,0 +1,18 @@
+apiVersion: v2
+name: shelve
+description: Shelve — persönliche Bibliotheksverwaltung (FastAPI, React, CloudNativePG)
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+keywords:
+  - shelve
+  - books
+  - library
+  - fastapi
+  - cloudnative-pg
+home: https://github.com/slauger/helm-charts
+sources:
+  - https://github.com/slauger/shelve
+maintainers:
+  - name: Simon Lauger
+    email: simon@lauger.de
