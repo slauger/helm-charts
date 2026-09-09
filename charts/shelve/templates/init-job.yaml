@@ -5,13 +5,26 @@ metadata:
   labels:
     {{- include "shelve.labels" . | nindent 4 }}
   annotations:
-    # post-install: den Datenbank-Cluster legt CNPG erst nach dem Install an, vorher gibt
-    #   es nichts zu migrieren.
-    # pre-upgrade: bei Updates erst migrieren, dann neue Pods rollen - sonst bedienen neue
-    #   Pods Anfragen gegen ein altes Schema.
+    # Fuer `helm install/upgrade` direkt:
+    #   post-install: den Datenbank-Cluster legt CNPG erst waehrend des Installs an, vorher
+    #     gibt es nichts zu migrieren.
+    #   pre-upgrade: bei Updates erst migrieren, dann neue Pods rollen - sonst bedienen neue
+    #     Pods Anfragen gegen ein noch altes Schema.
     helm.sh/hook: post-install,pre-upgrade
     helm.sh/hook-weight: "10"
     helm.sh/hook-delete-policy: before-hook-creation
+    # **Unter ArgoCD zaehlt nur diese Zeile.** ArgoCD uebersetzt `pre-upgrade` sonst zu
+    # PreSync - und PreSync-Hooks laufen, bevor irgendeine Ressource des Charts angelegt
+    # wird. Der Job wartet dann auf eine Datenbank, die erst im Sync danach entstehen soll,
+    # und blockiert genau den Sync, der sie anlegen wuerde. Beim ersten Ausrollen haengt die
+    # Application deshalb dauerhaft in "waiting for completion of hook".
+    #
+    # Preis dieser Festlegung: Bei einem Upgrade ueber ArgoCD rollen die neuen Pods, **bevor**
+    # migriert wird. Ein Schema-Wechsel, der die alte Version bricht, hat damit ein kurzes
+    # Fenster mit Fehlern. ArgoCD kann Install und Upgrade nicht unterscheiden, und ein
+    # blockierter Erst-Rollout ist der schlechtere Tausch.
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
 spec:
   backoffLimit: 3
   template:
