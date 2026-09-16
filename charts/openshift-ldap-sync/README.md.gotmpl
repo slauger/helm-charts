@@ -40,9 +40,15 @@ Directory conventions and can be overridden through the values below.
 ```bash
 helm repo add slauger https://slauger.github.io/helm-charts
 
-helm install ldap-sync slauger/openshift-ldap-sync -n openshift-authentication \
+helm install ldap-sync slauger/openshift-ldap-sync -n openshift-config \
   --set whitelist="CN=OpenShift-Admins,OU=Groups,DC=corp,DC=example,DC=com"
 ```
+
+Every object carries an explicit `metadata.namespace`, taken from the
+`namespace` value and not from `.Release.Namespace`. `helm template` without
+`-n` would otherwise fall back to the namespace of the current kubectl context,
+which leaves the role bindings pointing at a service account that does not
+exist there. Install the release into the same namespace the value names.
 
 ## Permissions
 
