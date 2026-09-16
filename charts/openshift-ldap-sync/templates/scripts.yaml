@@ -1,0 +1,7 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: {{ .Release.Name }}-ldap-scripts
+data:
+  ldap-sync.sh: |
+{{ .Files.Get "files/ldap-sync.sh" | indent 4 }}

@@ -3,30 +3,9 @@ apiVersion: v1
 metadata:
   name: {{ .Release.Name }}-ldap-config
 data:
-  whitelist: |
-{{- .Values.whitelist | nindent 4 }}
-  ldap-group-sync.yaml: |
-    kind: LDAPSyncConfig
-    apiVersion: v1
-    url: {{ .Values.params.url }}
-    insecure: false
-    #ca: /etc/ldap-ca/ca.crt
-    bindDN: "{{ .Values.bindDN }}"
-    bindPassword:
-      file: "/etc/secrets/bindPassword"
-    augmentedActiveDirectory:
-        groupsQuery:
-            baseDN: "{{ .Values.params.baseDN }}"
-            scope: sub
-            derefAliases: never
-            pageSize: 0
-        groupUIDAttribute: dn 
-        groupNameAttributes: [ sAMAccountName ] 
-        usersQuery:
-            baseDN: "{{ .Values.params.baseDN }}"
-            scope: sub
-            derefAliases: never
-            filter: (objectclass=person)
-            pageSize: 0
-        userNameAttributes: [ sAMAccountName ] 
-        groupMembershipAttributes: [ memberOf ] 
+  {{ .Values.mode }}.txt: |
+{{- if eq .Values.mode "blacklist" }}
+{{ .Values.blacklist | indent 4 }}
+{{- else }}
+{{ .Values.whitelist | indent 4 }}
+{{- end }}

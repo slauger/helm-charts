@@ -1,10 +1,9 @@
-{{- if ne .Values.cabundle "" }}
+{{- if .Values.cabundle }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: {{ .Release.Name }}-ldap-ca
-type: Opaque
 data:
   ca.crt: |
-{{ .Values.cabundle | nindent 4}}
+{{ .Values.cabundle | indent 4 }}
 {{- end }}

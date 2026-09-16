@@ -1,9 +1,9 @@
 kind: CronJob
-apiVersion: batch/v1beta1
+apiVersion: batch/v1
 metadata:
   name: {{ .Release.Name }}-ldap-group-sync
-spec:                          
-  schedule: "*/15 * * * *"                                                 
+spec:
+  schedule: "{{ .Values.schedule }}"
   concurrencyPolicy: Forbid
   jobTemplate:
     spec:
@@ -13,15 +13,24 @@ spec:
           containers:
             - name: ldap-group-sync
               image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+              imagePullPolicy: {{ .Values.image.pullPolicy }}
               command:
                 - "/bin/bash"
-                - "-c"
-                - oc adm groups sync --sync-config=/etc/config/ldap-group-sync.yaml --whitelist=/etc/config/whitelist.txt --confirm
+                - "/etc/scripts/ldap-sync.sh"
+              envFrom:
+                - configMapRef:
+                    name: "{{ .Release.Name }}-ldap-env"
               volumeMounts:
                 - mountPath: "/etc/config"
                   name: "ldap-sync-volume"
+                - mountPath: "/etc/scripts"
+                  name: "ldap-sync-scripts"
+                - mountPath: "/tmp/ldap-sync"
+                  name: "ldap-sync-workdir"
+{{- if .Values.params.bindPassword }}
                 - mountPath: "/etc/secrets"
                   name: "ldap-bind-password"
+{{- end }}
 {{- if .Values.cabundle }}
                 - mountPath: "/etc/ldap-ca"
                   name: "ldap-ca"
@@ -30,9 +39,17 @@ spec:
             - name: "ldap-sync-volume"
               configMap:
                 name: "{{ .Release.Name }}-ldap-config"
+            - name: "ldap-sync-scripts"
+              configMap:
+                name: "{{ .Release.Name }}-ldap-scripts"
+                defaultMode: 0555
+            - name: "ldap-sync-workdir"
+              emptyDir: {}
+{{- if .Values.params.bindPassword }}
             - name: "ldap-bind-password"
               secret:
                 secretName: "{{ .Release.Name }}-ldap-secret"
+{{- end }}
 {{- if .Values.cabundle }}
             - name: "ldap-ca"
               configMap:
@@ -42,8 +59,4 @@ spec:
           terminationGracePeriodSeconds: 30
           activeDeadlineSeconds: 500
           dnsPolicy: "ClusterFirst"
-{{- if eq .Values.serviceAccount.name "" }}
-          serviceAccountName: {{ .Release.Name }}
-{{- else }}
-          serviceAccountName: {{ .Values.serviceAccount.name }}
-{{- end }}
+          serviceAccountName: {{ include "openshift-ldap-sync.serviceAccountName" . }}

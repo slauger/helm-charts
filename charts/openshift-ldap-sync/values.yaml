@@ -1,30 +1,80 @@
-# Default values for openshift-ldap-sync.
-# This is a YAML-formatted file.
-# Declare variables to be passed into your templates.
-
 image:
+  # -- Container image repository
   repository: image-registry.openshift-image-registry.svc:5000/openshift/cli
+  # -- Image pull policy
   pullPolicy: Always
+  # -- Image tag
   tag: latest
 
-# "whitelist" or "blacklist"
+# -- Cron schedule of the sync job
+schedule: "0 * * * *"
+
+# -- Sync mode, either `whitelist` or `blacklist`
 mode: "whitelist"
 
+# -- Group DNs to sync, one per line, used with `mode: whitelist`
+whitelist: |
+  cn=foo,cn=bar
+
+# -- Group DNs to skip, one per line, used with `mode: blacklist`
+blacklist: ""
+
 rbac:
+  # -- Create ClusterRole, ClusterRoleBinding, Role and RoleBinding
   create: true
 
 serviceAccount:
+  # -- Create the service account
   create: true
+  # -- Annotations of the service account
   annotations: {}
+  # -- Name of the service account
+  # @default -- the release name
   name: ""
 
-cabundle: ""
+oauth:
+  # -- Name of the entry in `spec.identityProviders` the connection settings are read from
+  identityProvider: "ldap"
+  # -- Name of the OAuth resource
+  name: "cluster"
+  # -- Namespace holding the bind password secret and the CA config map the identity provider references
+  configNamespace: "openshift-config"
 
 params:
-  url: ""
+  # -- DN of the bind user
+  # @default -- `ldap.bindDN` of the identity provider
   bindDN: ""
+  # -- Password of the bind user, stored in a secret
+  # @default -- the secret the identity provider references
   bindPassword: ""
-  baseDN: ""
+  # -- Base DN of the group query
+  # @default -- base DN of the identity provider URL
+  groupsBaseDN: ""
+  # -- Base DN of the user query
+  # @default -- base DN of the identity provider URL
+  usersBaseDN: ""
 
-whitelist: |
-  cn=foo,cn=bar
+# -- CA certificate of the LDAP server
+# @default -- the config map the identity provider references
+cabundle: ""
+
+ldap:
+  # -- Search scope
+  # @default -- scope of the identity provider URL, `sub` if it carries none
+  scope: ""
+  # -- Attribute the OpenShift user is named after
+  # @default -- attribute of the identity provider URL, `sAMAccountName` if it carries none
+  userNameAttributes: ""
+  # -- Filter of the user query
+  # @default -- filter of the identity provider URL, `(objectclass=person)` if it carries none
+  usersFilter: ""
+  # -- Attribute used as group UID
+  groupUIDAttribute: "dn"
+  # -- Attribute the OpenShift group is named after
+  groupNameAttributes: "sAMAccountName"
+  # -- Attribute holding the group membership
+  groupMembershipAttributes: "memberOf"
+  # -- Additional filter of the group query
+  groupsFilter: ""
+  # -- Page size of the LDAP queries, `0` disables paging
+  pageSize: 0
