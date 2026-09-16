@@ -1,3 +1,6 @@
+# -- Namespace all objects are created in
+namespace: "openshift-config"
+
 image:
   # -- Container image repository
   repository: image-registry.openshift-image-registry.svc:5000/openshift/cli
@@ -7,7 +10,7 @@ image:
   tag: latest
 
 # -- Cron schedule of the sync job
-schedule: "0 * * * *"
+schedule: "42 * * * *"
 
 # -- Sync mode, either `whitelist` or `blacklist`
 mode: "whitelist"

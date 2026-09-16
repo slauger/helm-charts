@@ -40,9 +40,15 @@ Directory conventions and can be overridden through the values below.
 ```bash
 helm repo add slauger https://slauger.github.io/helm-charts
 
-helm install ldap-sync slauger/openshift-ldap-sync -n openshift-authentication \
+helm install ldap-sync slauger/openshift-ldap-sync -n openshift-config \
   --set whitelist="CN=OpenShift-Admins,OU=Groups,DC=corp,DC=example,DC=com"
 ```
+
+Every object carries an explicit `metadata.namespace`, taken from the
+`namespace` value and not from `.Release.Namespace`. `helm template` without
+`-n` would otherwise fall back to the namespace of the current kubectl context,
+which leaves the role bindings pointing at a service account that does not
+exist there. Install the release into the same namespace the value names.
 
 ## Permissions
 
@@ -84,6 +90,7 @@ oc get oauth cluster -o jsonpath='{range .spec.identityProviders[*]}{.name}{"\t"
 | ldap.userNameAttributes | string | attribute of the identity provider URL, `sAMAccountName` if it carries none | Attribute the OpenShift user is named after |
 | ldap.usersFilter | string | filter of the identity provider URL, `(objectclass=person)` if it carries none | Filter of the user query |
 | mode | string | `"whitelist"` | Sync mode, either `whitelist` or `blacklist` |
+| namespace | string | `"openshift-config"` | Namespace all objects are created in |
 | oauth.configNamespace | string | `"openshift-config"` | Namespace holding the bind password secret and the CA config map the identity provider references |
 | oauth.identityProvider | string | `"ldap"` | Name of the entry in `spec.identityProviders` the connection settings are read from |
 | oauth.name | string | `"cluster"` | Name of the OAuth resource |
@@ -92,7 +99,7 @@ oc get oauth cluster -o jsonpath='{range .spec.identityProviders[*]}{.name}{"\t"
 | params.groupsBaseDN | string | base DN of the identity provider URL | Base DN of the group query |
 | params.usersBaseDN | string | base DN of the identity provider URL | Base DN of the user query |
 | rbac.create | bool | `true` | Create ClusterRole, ClusterRoleBinding, Role and RoleBinding |
-| schedule | string | `"0 * * * *"` | Cron schedule of the sync job |
+| schedule | string | `"42 * * * *"` | Cron schedule of the sync job |
 | serviceAccount.annotations | object | `{}` | Annotations of the service account |
 | serviceAccount.create | bool | `true` | Create the service account |
 | serviceAccount.name | string | the release name | Name of the service account |

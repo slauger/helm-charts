@@ -2,10 +2,11 @@ kind: ConfigMap
 apiVersion: v1
 metadata:
   name: {{ .Release.Name }}-ldap-config
+  namespace: {{ .Values.namespace }}
 data:
   {{ .Values.mode }}.txt: |
 {{- if eq .Values.mode "blacklist" }}
-{{ .Values.blacklist | indent 4 }}
+{{ .Values.blacklist | trim | indent 4 }}
 {{- else }}
-{{ .Values.whitelist | indent 4 }}
+{{ .Values.whitelist | trim | indent 4 }}
 {{- end }}
