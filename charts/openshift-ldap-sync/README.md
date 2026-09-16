@@ -1,335 +1,117 @@
 # openshift-ldap-sync
 
-Automated LDAP/Active Directory group synchronization for OpenShift. This chart deploys a Kubernetes CronJob that periodically synchronizes LDAP/AD groups and users to OpenShift, enabling centralized identity management and RBAC.
+Automated LDAP/Active Directory group synchronization for OpenShift
 
-## Features
-
-- **Automated LDAP Sync** - Periodic synchronization of LDAP/AD groups to OpenShift
-- **Augmented Active Directory Support** - Optimized for Active Directory environments
-- **Whitelist/Blacklist Support** - Control which groups to synchronize
-- **CronJob Scheduling** - Default sync every 15 minutes
-- **RBAC Management** - Automatic creation of necessary ClusterRole and ClusterRoleBinding
-- **Service Account** - Dedicated service account with group management permissions
-- **TLS/SSL Support** - Optional CA bundle for secure LDAP connections
-- **Secure Credentials** - LDAP bind password stored in Kubernetes Secret
+The connection settings are not configured twice: the sync job reads the LDAP
+identity provider from the cluster wide `OAuth` resource and derives URL, base
+DN, bind DN, bind password and CA bundle from it. The only thing left to
+configure is which groups to sync.
 
 ## How It Works
 
-The chart creates a CronJob that:
+The CronJob runs `oc adm groups sync` and, before that, resolves its
+configuration:
 
-1. Connects to your LDAP/Active Directory server
-2. Queries for groups based on the configured base DN
-3. Filters groups using whitelist or blacklist
-4. Creates or updates corresponding OpenShift groups
-5. Syncs group memberships to OpenShift users
+1. Read `spec.identityProviders[]` of `oauth/cluster`, select the entry named
+   `ldap` and verify that it is of type `LDAP`
+2. Split its `ldap.url`, which follows RFC 4516:
 
-This enables you to manage user permissions centrally in LDAP/AD and have them automatically reflected in OpenShift.
+   ```
+   ldaps://lan.example.corp.int:636/dc=foo,dc=bar,dc=de?sAMAccountName?sub?(objectClass=user)
+   \_____________________________/ \_________________/ \____________/ \_/ \________________/
+                 url                      baseDN           attribute  scope      filter
+   ```
+
+3. Read the bind password from the secret and the CA bundle from the config map
+   that `ldap.bindPassword` and `ldap.ca` reference
+4. Write the resulting `LDAPSyncConfig` and sync the groups of the whitelist
+
+Resolving happens inside the job, not while rendering the chart. This keeps the
+chart usable with `helm template` and Argo CD, and a change of the identity
+provider is picked up on the next run without a redeploy.
+
+The identity provider only describes the user side of the directory, it knows
+nothing about groups. `groupUIDAttribute`, `groupNameAttributes`,
+`groupMembershipAttributes` and the group query therefore default to Active
+Directory conventions and can be overridden through the values below.
 
 ## Installation
 
-### Add Helm Repository
-
 ```bash
 helm repo add slauger https://slauger.github.io/helm-charts
-helm repo update
+
+helm install ldap-sync slauger/openshift-ldap-sync -n openshift-authentication \
+  --set whitelist="CN=OpenShift-Admins,OU=Groups,DC=corp,DC=example,DC=com"
 ```
 
-### Prerequisites
+## Permissions
 
-Before installing this chart, ensure you have:
+The service account created by the chart gets
 
-1. **LDAP/Active Directory Server** - Accessible from the cluster
-2. **LDAP Bind Account** - Service account with read access to users and groups
-3. **OpenShift Cluster** - This chart is designed for OpenShift only
+- `get`, `list`, `create` and `update` on `groups.user.openshift.io`,
+- `get` on the `OAuth` resource named in `oauth.name`, and
+- `get` on secrets and config maps in `oauth.configNamespace`.
 
-### Install Chart
-
-```bash
-helm install ldap-sync slauger/openshift-ldap-sync \
-  --set params.url="ldaps://ldap.example.com:636" \
-  --set params.bindDN="CN=bind-user,OU=Service Accounts,DC=example,DC=com" \
-  --set params.bindPassword="your-password" \
-  --set params.baseDN="DC=example,DC=com" \
-  --set whitelist="cn=admins,ou=groups,dc=example,dc=com" \
-  -n openshift-authentication
-```
-
-### Install with Custom Values
-
-Create a `values.yaml` file:
-
-```yaml
-params:
-  url: "ldaps://ldap.example.com:636"
-  bindDN: "CN=sync-user,OU=Service Accounts,DC=example,DC=com"
-  bindPassword: "SecurePassword123"
-  baseDN: "DC=example,DC=com"
-
-mode: "whitelist"
-
-whitelist: |
-  cn=cluster-admins,ou=groups,dc=example,dc=com
-  cn=developers,ou=groups,dc=example,dc=com
-  cn=viewers,ou=groups,dc=example,dc=com
-```
-
-Then install:
-
-```bash
-helm install ldap-sync slauger/openshift-ldap-sync -f values.yaml -n openshift-authentication
-```
-
-## Configuration
-
-### LDAP Connection Parameters
-
-| Parameter | Description | Required |
-|-----------|-------------|----------|
-| `params.url` | LDAP server URL (ldaps://host:636 or ldap://host:389) | Yes |
-| `params.bindDN` | DN of the bind user | Yes |
-| `params.bindPassword` | Password for the bind user | Yes |
-| `params.baseDN` | Base DN for searches | Yes |
-
-### Image Configuration
-
-| Parameter | Description | Default |
-|-----------|-------------|---------|
-| `image.repository` | Container image repository | `image-registry.openshift-image-registry.svc:5000/openshift/cli` |
-| `image.pullPolicy` | Image pull policy | `Always` |
-| `image.tag` | Image tag | `latest` |
-
-### Synchronization Mode
-
-| Parameter | Description | Default |
-|-----------|-------------|---------|
-| `mode` | Sync mode: "whitelist" or "blacklist" | `whitelist` |
-| `whitelist` | List of group DNs to sync (one per line) | `cn=foo,cn=bar` |
-
-### RBAC and Service Account
-
-| Parameter | Description | Default |
-|-----------|-------------|---------|
-| `rbac.create` | Create ClusterRole and ClusterRoleBinding | `true` |
-| `serviceAccount.create` | Create service account | `true` |
-| `serviceAccount.name` | Service account name (generated if empty) | `""` |
-| `serviceAccount.annotations` | Service account annotations | `{}` |
-
-### TLS/SSL Configuration
-
-| Parameter | Description | Default |
-|-----------|-------------|---------|
-| `cabundle` | CA certificate bundle for LDAP server | `""` |
-
-## CronJob Schedule
-
-The default schedule syncs groups every 15 minutes:
-
-```yaml
-schedule: "*/15 * * * *"
-```
-
-To customize the schedule, edit the chart's CronJob template or fork the chart.
-
-### Common Cron Schedules
-
-| Schedule | Description |
-|----------|-------------|
-| `*/15 * * * *` | Every 15 minutes (default) |
-| `*/5 * * * *` | Every 5 minutes |
-| `0 * * * *` | Every hour |
-| `0 */6 * * *` | Every 6 hours |
-
-## Examples
-
-### Active Directory with Whitelist
-
-```yaml
-params:
-  url: "ldaps://ad.corp.example.com:636"
-  bindDN: "CN=openshift-sync,OU=Service Accounts,DC=corp,DC=example,DC=com"
-  bindPassword: "SecurePassword123"
-  baseDN: "DC=corp,DC=example,DC=com"
-
-mode: "whitelist"
-
-whitelist: |
-  CN=OpenShift-Admins,OU=Groups,DC=corp,DC=example,DC=com
-  CN=OpenShift-Developers,OU=Groups,DC=corp,DC=example,DC=com
-  CN=OpenShift-Viewers,OU=Groups,DC=corp,DC=example,DC=com
-```
-
-### With Custom CA Bundle
-
-```yaml
-params:
-  url: "ldaps://ldap.example.com:636"
-  bindDN: "cn=sync-user,ou=service,dc=example,dc=com"
-  bindPassword: "password"
-  baseDN: "dc=example,dc=com"
-
-cabundle: |
-  -----BEGIN CERTIFICATE-----
-  MIIDXTCCAkWgAwIBAgIJAKJ5...
-  ...
-  -----END CERTIFICATE-----
-```
-
-### With Custom Service Account
-
-```yaml
-serviceAccount:
-  create: false
-  name: custom-ldap-sync-sa
-
-rbac:
-  create: false
-```
-
-## RBAC Permissions
-
-The chart creates a ClusterRole with the following permissions:
-
-```yaml
-rules:
-  - apiGroups:
-      - ''
-      - user.openshift.io
-    resources:
-      - groups
-    verbs:
-      - get
-      - list
-      - create
-      - update
-```
-
-This allows the sync job to manage OpenShift group objects.
-
-## Monitoring
-
-### View CronJob Status
-
-```bash
-kubectl get cronjob -n openshift-authentication
-```
-
-### View Recent Sync Jobs
-
-```bash
-kubectl get jobs -n openshift-authentication | grep ldap-group-sync
-```
-
-### View Sync Job Logs
-
-```bash
-kubectl logs job/<job-name> -n openshift-authentication
-```
-
-### Check Synced Groups
-
-```bash
-oc get groups
-```
-
-### Manual Trigger
-
-Manually trigger a sync job:
-
-```bash
-kubectl create job --from=cronjob/<cronjob-name> manual-ldap-sync-$(date +%s) -n openshift-authentication
-```
+The last one also covers the credentials of the other identity providers in
+`openshift-config`. To avoid it, set `rbac.create: false`, bind your own role
+and pass `params.bindDN`, `params.bindPassword` and `cabundle` instead.
 
 ## Troubleshooting
 
-### Connection Issues
-
-Test LDAP connection from within the cluster:
-
-```bash
-oc run ldap-test --image=image-registry.openshift-image-registry.svc:5000/openshift/cli --restart=Never -- \
-  ldapsearch -H ldaps://ldap.example.com:636 -D "CN=bind-user,DC=example,DC=com" -w "password" -b "DC=example,DC=com"
-```
-
-### Certificate Errors
-
-If using self-signed certificates, ensure the CA bundle is configured:
-
-```yaml
-cabundle: |
-  -----BEGIN CERTIFICATE-----
-  ...
-  -----END CERTIFICATE-----
-```
-
-### Permission Errors
-
-Verify the service account has the necessary permissions:
+The job logs the generated `LDAPSyncConfig` before it starts syncing, which
+shows what was derived from the identity provider. If it aborts because the
+identity provider was not found, check the name:
 
 ```bash
-oc describe clusterrolebinding | grep ldap-group-sync
+oc get oauth cluster -o jsonpath='{range .spec.identityProviders[*]}{.name}{"\t"}{.type}{"\n"}{end}'
 ```
 
-### No Groups Syncing
+## Values
 
-Check the whitelist configuration matches your LDAP group DNs exactly:
-
-```bash
-# View job logs
-kubectl logs job/<job-name> -n openshift-authentication
-
-# Verify LDAP group DNs
-ldapsearch -H ldaps://ldap.example.com:636 -D "CN=bind,DC=example,DC=com" -w "password" \
-  -b "DC=example,DC=com" "(objectClass=group)" dn
-```
-
-## LDAP Sync Configuration
-
-The chart uses the Augmented Active Directory schema with the following defaults:
-
-- **Group UID Attribute**: `dn`
-- **Group Name Attributes**: `sAMAccountName`
-- **User Name Attributes**: `sAMAccountName`
-- **Group Membership Attributes**: `memberOf`
-- **User Filter**: `(objectclass=person)`
-
-These settings work well for Active Directory. For other LDAP servers, you may need to customize the `config.yaml` template.
-
-## Resources Created
-
-This chart creates the following Kubernetes resources:
-
-- **CronJob** - Scheduled LDAP sync job
-- **ConfigMap** - LDAP sync configuration and whitelist
-- **ConfigMap** - CA bundle (if configured)
-- **Secret** - LDAP bind password
-- **ServiceAccount** - Dedicated service account (if enabled)
-- **ClusterRole** - Group management permissions (if enabled)
-- **ClusterRoleBinding** - Binds ClusterRole to ServiceAccount (if enabled)
-
-## Security Considerations
-
-- **Secure Password Storage**: Bind password is stored in a Kubernetes Secret
-- **TLS Connections**: Always use `ldaps://` in production
-- **Least Privilege**: Bind account should have read-only access to LDAP
-- **Network Policies**: Consider restricting egress to LDAP server only
-- **Secret Rotation**: Regularly rotate the bind account password
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| blacklist | string | `""` | Group DNs to skip, one per line, used with `mode: blacklist` |
+| cabundle | string | the config map the identity provider references | CA certificate of the LDAP server |
+| image.pullPolicy | string | `"Always"` | Image pull policy |
+| image.repository | string | `"image-registry.openshift-image-registry.svc:5000/openshift/cli"` | Container image repository |
+| image.tag | string | `"latest"` | Image tag |
+| ldap.groupMembershipAttributes | string | `"memberOf"` | Attribute holding the group membership |
+| ldap.groupNameAttributes | string | `"sAMAccountName"` | Attribute the OpenShift group is named after |
+| ldap.groupUIDAttribute | string | `"dn"` | Attribute used as group UID |
+| ldap.groupsFilter | string | `""` | Additional filter of the group query |
+| ldap.pageSize | int | `0` | Page size of the LDAP queries, `0` disables paging |
+| ldap.scope | string | scope of the identity provider URL, `sub` if it carries none | Search scope |
+| ldap.userNameAttributes | string | attribute of the identity provider URL, `sAMAccountName` if it carries none | Attribute the OpenShift user is named after |
+| ldap.usersFilter | string | filter of the identity provider URL, `(objectclass=person)` if it carries none | Filter of the user query |
+| mode | string | `"whitelist"` | Sync mode, either `whitelist` or `blacklist` |
+| oauth.configNamespace | string | `"openshift-config"` | Namespace holding the bind password secret and the CA config map the identity provider references |
+| oauth.identityProvider | string | `"ldap"` | Name of the entry in `spec.identityProviders` the connection settings are read from |
+| oauth.name | string | `"cluster"` | Name of the OAuth resource |
+| params.bindDN | string | `ldap.bindDN` of the identity provider | DN of the bind user |
+| params.bindPassword | string | the secret the identity provider references | Password of the bind user, stored in a secret |
+| params.groupsBaseDN | string | base DN of the identity provider URL | Base DN of the group query |
+| params.usersBaseDN | string | base DN of the identity provider URL | Base DN of the user query |
+| rbac.create | bool | `true` | Create ClusterRole, ClusterRoleBinding, Role and RoleBinding |
+| schedule | string | `"0 * * * *"` | Cron schedule of the sync job |
+| serviceAccount.annotations | object | `{}` | Annotations of the service account |
+| serviceAccount.create | bool | `true` | Create the service account |
+| serviceAccount.name | string | the release name | Name of the service account |
+| whitelist | string | `"cn=foo,cn=bar\n"` | Group DNs to sync, one per line, used with `mode: whitelist` |
 
 ## Requirements
 
-- OpenShift 4.x
-- Kubernetes 1.19+
+- OpenShift 4.x with an identity provider of type `LDAP`
 - Helm 3.0+
-- LDAP/Active Directory server accessible from the cluster
 
 ## Maintainers
 
-| Name | Email |
-|------|-------|
-| Simon Lauger | simon@lauger.de |
+| Name | Email | Url |
+| ---- | ------ | --- |
+| Simon Lauger | <simon@lauger.de> |  |
 
 ## Source Code
 
-- <https://github.com/slauger/helm-charts>
+* <https://github.com/slauger/helm-charts>
 
 ## References
 

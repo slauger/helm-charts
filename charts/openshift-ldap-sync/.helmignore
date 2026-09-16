@@ -21,3 +21,5 @@
 .idea/
 *.tmproj
 .vscode/
+# Docs template, not part of the packaged chart
+README.md.gotmpl

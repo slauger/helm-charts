@@ -1,0 +1,82 @@
+{{ template "chart.header" . }}
+
+{{ template "chart.description" . }}
+
+The connection settings are not configured twice: the sync job reads the LDAP
+identity provider from the cluster wide `OAuth` resource and derives URL, base
+DN, bind DN, bind password and CA bundle from it. The only thing left to
+configure is which groups to sync.
+
+## How It Works
+
+The CronJob runs `oc adm groups sync` and, before that, resolves its
+configuration:
+
+1. Read `spec.identityProviders[]` of `oauth/cluster`, select the entry named
+   `ldap` and verify that it is of type `LDAP`
+2. Split its `ldap.url`, which follows RFC 4516:
+
+   ```
+   ldaps://lan.example.corp.int:636/dc=foo,dc=bar,dc=de?sAMAccountName?sub?(objectClass=user)
+   \_____________________________/ \_________________/ \____________/ \_/ \________________/
+                 url                      baseDN           attribute  scope      filter
+   ```
+
+3. Read the bind password from the secret and the CA bundle from the config map
+   that `ldap.bindPassword` and `ldap.ca` reference
+4. Write the resulting `LDAPSyncConfig` and sync the groups of the whitelist
+
+Resolving happens inside the job, not while rendering the chart. This keeps the
+chart usable with `helm template` and Argo CD, and a change of the identity
+provider is picked up on the next run without a redeploy.
+
+The identity provider only describes the user side of the directory, it knows
+nothing about groups. `groupUIDAttribute`, `groupNameAttributes`,
+`groupMembershipAttributes` and the group query therefore default to Active
+Directory conventions and can be overridden through the values below.
+
+## Installation
+
+```bash
+helm repo add slauger https://slauger.github.io/helm-charts
+
+helm install ldap-sync slauger/openshift-ldap-sync -n openshift-authentication \
+  --set whitelist="CN=OpenShift-Admins,OU=Groups,DC=corp,DC=example,DC=com"
+```
+
+## Permissions
+
+The service account created by the chart gets
+
+- `get`, `list`, `create` and `update` on `groups.user.openshift.io`,
+- `get` on the `OAuth` resource named in `oauth.name`, and
+- `get` on secrets and config maps in `oauth.configNamespace`.
+
+The last one also covers the credentials of the other identity providers in
+`openshift-config`. To avoid it, set `rbac.create: false`, bind your own role
+and pass `params.bindDN`, `params.bindPassword` and `cabundle` instead.
+
+## Troubleshooting
+
+The job logs the generated `LDAPSyncConfig` before it starts syncing, which
+shows what was derived from the identity provider. If it aborts because the
+identity provider was not found, check the name:
+
+```bash
+oc get oauth cluster -o jsonpath='{range .spec.identityProviders[*]}{.name}{"\t"}{.type}{"\n"}{end}'
+```
+
+{{ template "chart.valuesSection" . }}
+
+## Requirements
+
+- OpenShift 4.x with an identity provider of type `LDAP`
+- Helm 3.0+
+
+{{ template "chart.maintainersSection" . }}
+
+{{ template "chart.sourcesSection" . }}
+
+## References
+
+- [OpenShift LDAP Group Sync Documentation](https://docs.openshift.com/container-platform/latest/authentication/ldap-syncing.html)
