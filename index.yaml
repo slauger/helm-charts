@@ -1,0 +1,328 @@
+apiVersion: v1
+entries:
+  certificate:
+  - apiVersion: v2
+    appVersion: 1.0.0
+    created: "2026-10-02T21:13:27.274552691Z"
+    description: Generic cert-manager Certificate resources
+    digest: 09e4318cee66321b788e5212a52d9395bfceace639beb23b0367f36094715ef0
+    home: https://github.com/slauger/helm-charts
+    keywords:
+    - certificate
+    - cert-manager
+    - tls
+    - letsencrypt
+    maintainers:
+    - email: simon@lauger.de
+      name: Simon Lauger
+      url: https://lauger.de
+    name: certificate
+    sources:
+    - https://github.com/slauger/helm-charts
+    type: application
+    urls:
+    - https://github.com/slauger/helm-charts/releases/download/certificate-0.1.0/certificate-0.1.0.tgz
+    version: 0.1.0
+  deployment:
+  - apiVersion: v2
+    appVersion: 1.16.0
+    created: "2026-10-02T21:13:27.274875338Z"
+    description: Kubernetes deployment chart with Envoy proxy sidecar for TLS termination
+    digest: bf5e40e27cd341b9fdca219182926168715638c46530e526943b02bb60be0813
+    home: https://github.com/slauger/helm-charts
+    keywords:
+    - deployment
+    - envoy
+    - proxy
+    - tls
+    - kubernetes
+    maintainers:
+    - email: simon@lauger.de
+      name: Simon Lauger
+    name: deployment
+    sources:
+    - https://github.com/slauger/helm-charts
+    type: application
+    urls:
+    - https://github.com/slauger/helm-charts/releases/download/deployment-0.1.0/deployment-0.1.0.tgz
+    version: 0.1.0
+  deployment-simple:
+  - apiVersion: v2
+    appVersion: 1.0.0
+    created: "2026-10-02T21:13:27.27511391Z"
+    description: Simple Kubernetes deployment chart with minimal configuration
+    digest: e9aef70e05173b46c8919010aeafdd0a37386ecbcebf80ca1118fee36e2393e4
+    home: https://github.com/slauger/helm-charts
+    keywords:
+    - deployment
+    - simple
+    - kubernetes
+    maintainers:
+    - email: simon@lauger.de
+      name: Simon Lauger
+    name: deployment-simple
+    sources:
+    - https://github.com/slauger/helm-charts
+    type: application
+    urls:
+    - https://github.com/slauger/helm-charts/releases/download/deployment-simple-0.1.0/deployment-simple-0.1.0.tgz
+    version: 0.1.0
+  dns-endpoint:
+  - apiVersion: v2
+    appVersion: 1.0.0
+    created: "2026-10-02T21:13:27.275232382Z"
+    description: Generic ExternalDNS DNSEndpoint resources
+    digest: c804d55870659079fc51a10e96e5ebef52cd67dff00208c6384d2360af694d41
+    home: https://github.com/slauger/helm-charts
+    keywords:
+    - dns
+    - external-dns
+    - dnsendpoint
+    - cloudflare
+    maintainers:
+    - email: simon@lauger.de
+      name: Simon Lauger
+      url: https://lauger.de
+    name: dns-endpoint
+    sources:
+    - https://github.com/slauger/helm-charts
+    type: application
+    urls:
+    - https://github.com/slauger/helm-charts/releases/download/dns-endpoint-0.1.0/dns-endpoint-0.1.0.tgz
+    version: 0.1.0
+  eibtalio:
+  - apiVersion: v2
+    appVersion: 0.1.0
+    created: "2026-10-02T21:13:27.275751117Z"
+    description: Eibtalio PMS — Hotel Management System for Kinderhotels
+    digest: 7ede9f6d3f00c0e098493179ccf296d5df91f757c577de70bddff348f6b3afc4
+    home: https://github.com/slauger/helm-charts
+    keywords:
+    - eibtalio
+    - pms
+    - hotel
+    - fastapi
+    - cloudnative-pg
+    maintainers:
+    - email: simon@lauger.de
+      name: Simon Lauger
+    name: eibtalio
+    type: application
+    urls:
+    - https://github.com/slauger/helm-charts/releases/download/eibtalio-0.11.1/eibtalio-0.11.1.tgz
+    version: 0.11.1
+  example-chart:
+  - apiVersion: v2
+    appVersion: 1.16.0
+    created: "2026-10-02T21:13:27.276093705Z"
+    description: Example Helm chart demonstrating common Kubernetes deployment patterns
+    digest: 565b0109fa07086c13f6679363233836ea0134793f1cd62ed6a460c747841007
+    home: https://github.com/slauger/helm-charts
+    keywords:
+    - example
+    - template
+    - nginx
+    - deployment
+    - kubernetes
+    maintainers:
+    - email: simon@lauger.de
+      name: Simon Lauger
+    name: example-chart
+    sources:
+    - https://github.com/slauger/helm-charts
+    type: application
+    urls:
+    - https://github.com/slauger/helm-charts/releases/download/example-chart-0.1.0/example-chart-0.1.0.tgz
+    version: 0.1.0
+  hcloud-registry:
+  - apiVersion: v2
+    appVersion: 2.8.3
+    created: "2026-10-02T21:13:27.27652941Z"
+    description: Docker Registry v2 with Hetzner Cloud S3 storage backend
+    digest: 71429b644f66a31e76b2ccdfef457dcc95fcb1a23afd36c2eb940fce22647f95
+    home: https://github.com/slauger/helm-charts
+    keywords:
+    - docker
+    - registry
+    - hetzner
+    - s3
+    maintainers:
+    - email: simon@lauger.de
+      name: Simon Lauger
+    name: hcloud-registry
+    sources:
+    - https://github.com/distribution/distribution
+    type: application
+    urls:
+    - https://github.com/slauger/helm-charts/releases/download/hcloud-registry-0.1.1/hcloud-registry-0.1.1.tgz
+    version: 0.1.1
+  hugo-nginx:
+  - annotations:
+      category: Website
+    apiVersion: v2
+    appVersion: 1.0.0
+    created: "2026-10-02T21:13:27.276921143Z"
+    description: Generic Helm chart for deploying Hugo static sites with nginx
+    digest: 718e182b8cd7a65a6c0a68d5beffe49c55ec8fd245d0b733997129857d0cb1d1
+    home: https://github.com/slauger/helm-charts
+    keywords:
+    - hugo
+    - nginx
+    - static-site
+    - website
+    maintainers:
+    - email: simon@lauger.de
+      name: Simon Lauger
+    name: hugo-nginx
+    sources:
+    - https://github.com/slauger/helm-charts
+    - https://gohugo.io
+    - https://nginx.org
+    type: application
+    urls:
+    - https://github.com/slauger/helm-charts/releases/download/hugo-nginx-0.3.1/hugo-nginx-0.3.1.tgz
+    version: 0.3.1
+  openshift-autoupdate:
+  - apiVersion: v2
+    appVersion: 1.16.0
+    created: "2026-10-02T21:13:27.277099747Z"
+    description: Automated OpenShift cluster upgrade via scheduled CronJob
+    digest: fed6c6365f566fabc82525f378b6901b565decbad78719ab30af07d4046d2dbf
+    home: https://github.com/slauger/helm-charts
+    keywords:
+    - openshift
+    - upgrade
+    - automation
+    - cronjob
+    - cluster-management
+    maintainers:
+    - email: simon@lauger.de
+      name: Simon Lauger
+    name: openshift-autoupdate
+    sources:
+    - https://github.com/slauger/helm-charts
+    type: application
+    urls:
+    - https://github.com/slauger/helm-charts/releases/download/openshift-autoupdate-0.1.0/openshift-autoupdate-0.1.0.tgz
+    version: 0.1.0
+  openshift-cacheclear:
+  - apiVersion: v2
+    appVersion: 1.16.0
+    created: "2026-10-02T21:13:27.278249521Z"
+    description: Scheduled cache clearing for OpenShift cluster nodes
+    digest: 7cc30b984c34ff9d32eb41fad54c9fcff2eefc7c3e20f3c54b78ca433a1f0c3a
+    home: https://github.com/slauger/helm-charts
+    keywords:
+    - openshift
+    - cache
+    - maintenance
+    - cronjob
+    - node-management
+    maintainers:
+    - email: simon@lauger.de
+      name: Simon Lauger
+    name: openshift-cacheclear
+    sources:
+    - https://github.com/slauger/helm-charts
+    type: application
+    urls:
+    - https://github.com/slauger/helm-charts/releases/download/openshift-cacheclear-0.1.0/openshift-cacheclear-0.1.0.tgz
+    version: 0.1.0
+  openshift-ldap-sync:
+  - apiVersion: v2
+    appVersion: 2.0.0
+    created: "2026-10-02T21:13:27.278706077Z"
+    description: Automated LDAP/Active Directory group synchronization for OpenShift
+    digest: 1cca8a0ee27b752033bd84969a86720585ba2b6a2b1919674232586786d07a89
+    home: https://github.com/slauger/helm-charts
+    keywords:
+    - openshift
+    - ldap
+    - active-directory
+    - authentication
+    - rbac
+    - cronjob
+    maintainers:
+    - email: simon@lauger.de
+      name: Simon Lauger
+    name: openshift-ldap-sync
+    sources:
+    - https://github.com/slauger/helm-charts
+    type: application
+    urls:
+    - https://github.com/slauger/helm-charts/releases/download/openshift-ldap-sync-2.0.0/openshift-ldap-sync-2.0.0.tgz
+    version: 2.0.0
+  openshift-virtualmachine:
+  - apiVersion: v2
+    appVersion: 1.0.0
+    created: "2026-10-02T21:13:27.279000353Z"
+    description: KubeVirt VirtualMachine and VirtualMachinePool resources for OpenShift
+      Virtualization
+    digest: 894c0ffec1fd76a94e562bafd215bc63af4b601279c28d76d2c2fbb0adede7fa
+    home: https://github.com/slauger/helm-charts
+    keywords:
+    - openshift
+    - virtualization
+    - kubevirt
+    - virtualmachine
+    - vm
+    maintainers:
+    - email: simon@lauger.de
+      name: Simon Lauger
+      url: https://lauger.de
+    name: openshift-virtualmachine
+    sources:
+    - https://github.com/slauger/helm-charts
+    type: application
+    urls:
+    - https://github.com/slauger/helm-charts/releases/download/openshift-virtualmachine-0.1.0/openshift-virtualmachine-0.1.0.tgz
+    version: 0.1.0
+  renovate-cronjob:
+  - apiVersion: v2
+    appVersion: latest
+    created: "2026-10-02T21:13:27.279264463Z"
+    description: Scheduled Renovate bot for automated dependency updates
+    digest: a38cc214b2a2540b7d7478313a77e152a022228073b266348ee612ea6a5950b2
+    home: https://github.com/slauger/helm-charts
+    keywords:
+    - renovate
+    - dependencies
+    - automation
+    - cronjob
+    - github
+    - gitlab
+    maintainers:
+    - email: simon@lauger.de
+      name: Simon Lauger
+    name: renovate-cronjob
+    sources:
+    - https://github.com/slauger/helm-charts
+    - https://github.com/renovatebot/renovate
+    type: application
+    urls:
+    - https://github.com/slauger/helm-charts/releases/download/renovate-cronjob-0.1.0/renovate-cronjob-0.1.0.tgz
+    version: 0.1.0
+  shelve:
+  - apiVersion: v2
+    appVersion: 0.1.0
+    created: "2026-10-02T21:13:27.279610875Z"
+    description: Shelve — persönliche Bibliotheksverwaltung (FastAPI, React, CloudNativePG)
+    digest: 3c96022e9127b3d416aadefde164343fcb5285df577c76a5e46f66b5fa6b50de
+    home: https://github.com/slauger/helm-charts
+    keywords:
+    - shelve
+    - books
+    - library
+    - fastapi
+    - cloudnative-pg
+    maintainers:
+    - email: simon@lauger.de
+      name: Simon Lauger
+    name: shelve
+    sources:
+    - https://github.com/slauger/shelve
+    type: application
+    urls:
+    - https://github.com/slauger/helm-charts/releases/download/shelve-0.1.1/shelve-0.1.1.tgz
+    version: 0.1.1
+generated: "2026-10-02T21:13:27.274173218Z"
