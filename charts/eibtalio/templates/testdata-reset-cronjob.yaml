@@ -50,4 +50,18 @@ spec:
                       key: admin-password
                 - name: EIBTALIO_DEBUG
                   value: "true"
+                # Ohne diesen Schluessel loescht `seed_testdata --reset` nichts und endet mit
+                # Code 2 - ein Riegel im Image gegen genau diesen Job (KR-0032). Er fehlte hier,
+                # deshalb lief seit dem 2026-09-04 jede Nacht nur die erste Haelfte des Befehls:
+                # `seed` legte Stammdaten idempotent an, der Reset brach ab, und QA zeigte einen
+                # eingefrorenen Bestand, den alle fuer frisch hielten (KR-0122). Ein
+                # fehlgeschlagener CronJob in einem Cluster ohne Alarm sagt niemandem etwas.
+                #
+                # **Bewusst festverdrahtet und kein eigener Values-Schalter.** Dieses Objekt
+                # existiert nur, wenn `testdataReset.enabled` gesetzt ist - und wer einen
+                # naechtlichen Testdaten-Reset einschaltet, hat damit genau die Erlaubnis
+                # erteilt, die der Schluessel abfragt. Ein zweiter Schalter koennte wieder
+                # auseinanderlaufen und erzeugte denselben stillen Fehlschlag.
+                - name: EIBTALIO_ALLOW_TESTDATA_RESET
+                  value: "1"
 {{- end }}
