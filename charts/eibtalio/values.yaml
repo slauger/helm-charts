@@ -27,6 +27,32 @@ frontend:
       cpu: 200m
       memory: 128Mi
 
+# Die Gast-App (`eibtalio-guest`, ADR 0069): Angebot, Buchungsstrecke, Gästeportal. Läuft unter
+# einem **eigenen Host** (z. B. portal.eibtalio.de). Dort gehen nur `/api/public` und `/api/guest`
+# ans Backend, alles andere an die Gast-App - die interne Fläche `/api/v1` ist über diesen Host
+# nicht erreichbar.
+guest:
+  enabled: false
+  # Required when enabled — no defaults, must be set
+  image: ""
+  replicas: 1
+  port: 80
+  resources:
+    requests:
+      cpu: 20m
+      memory: 32Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+  ingress:
+    enabled: false
+    className: ""
+    # Required when enabled — no default, must be set
+    host: ""
+    tls:
+      enabled: false
+      secretName: ""
+
 # Der Beleg-Renderer (Container `eibtalio-render`). Das eigene Beleg-Backend fakturio erzeugt
 # die Belege selbst, aber nicht das PDF — dafür braucht es diesen Dienst. Er hält keine Daten
 # und bedient jedes Haus, deshalb genügt eine Instanz. Ist er aus, bleiben Belege und

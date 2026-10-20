@@ -1,0 +1,18 @@
+{{- if .Values.guest.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "eibtalio.fullname" . }}-guest
+  labels:
+    {{- include "eibtalio.labels" . | nindent 4 }}
+    app.kubernetes.io/component: guest
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "eibtalio.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: guest
+  ports:
+    - name: http
+      port: {{ .Values.guest.port }}
+      targetPort: http
+{{- end }}

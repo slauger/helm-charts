@@ -1,0 +1,48 @@
+{{- if .Values.guest.enabled }}
+{{- if not .Values.guest.image }}
+{{- fail "guest.image is required when guest.enabled is true" }}
+{{- end }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "eibtalio.fullname" . }}-guest
+  labels:
+    {{- include "eibtalio.labels" . | nindent 4 }}
+    app.kubernetes.io/component: guest
+spec:
+  replicas: {{ .Values.guest.replicas }}
+  selector:
+    matchLabels:
+      {{- include "eibtalio.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: guest
+  template:
+    metadata:
+      labels:
+        {{- include "eibtalio.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: guest
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: guest
+          image: {{ .Values.guest.image }}
+          env:
+            # nginx im Image loest den Upstream beim Start auf - ohne gueltigen Namen startet es
+            # nicht. Im Cluster gehen /api/public und /api/guest ueber den Ingress direkt ans
+            # Backend; der Proxy im Image traegt nur ohne Ingress (Compose).
+            - name: BACKEND_UPSTREAM
+              value: "{{ include "eibtalio.fullname" . }}-backend:{{ .Values.backend.port }}"
+          ports:
+            - name: http
+              containerPort: {{ .Values.guest.port }}
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 3
+            periodSeconds: 10
+          resources:
+            {{- toYaml .Values.guest.resources | nindent 12 }}
+{{- end }}

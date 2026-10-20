@@ -1,0 +1,53 @@
+{{- if and .Values.guest.enabled .Values.guest.ingress.enabled }}
+{{- if not .Values.guest.ingress.host }}
+{{- fail "guest.ingress.host is required when guest.ingress.enabled is true" }}
+{{- end }}
+# **Der Gast-Host kennt nur die Gast-Flaechen** (ADR 0069). `/api/public` (ohne Anmeldung) und
+# `/api/guest` (Gast-Token) gehen ans Backend, alles andere an die Gast-App. Bewusst **kein**
+# `/api`-Praefix wie beim Mitarbeiter-Host: Die interne Flaeche `/api/v1` soll ueber diesen Namen
+# gar nicht erst erreichbar sein - die Gast-App beantwortet sie mit 404.
+#
+# Same-origin wie beim Mitarbeiter-Host: Die Gast-App ruft relative Pfade, CORS ist hier kein Thema.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "eibtalio.fullname" . }}-guest
+  labels:
+    {{- include "eibtalio.labels" . | nindent 4 }}
+    app.kubernetes.io/component: guest
+spec:
+  {{- with .Values.guest.ingress.className | default .Values.ingress.className }}
+  ingressClassName: {{ . }}
+  {{- end }}
+  {{- if .Values.guest.ingress.tls.enabled }}
+  tls:
+    - hosts:
+        - {{ .Values.guest.ingress.host }}
+      secretName: {{ .Values.guest.ingress.tls.secretName | default (printf "%s-guest-tls" (include "eibtalio.fullname" .)) }}
+  {{- end }}
+  rules:
+    - host: {{ .Values.guest.ingress.host }}
+      http:
+        paths:
+          - path: /api/public
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "eibtalio.fullname" . }}-backend
+                port:
+                  name: http
+          - path: /api/guest
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "eibtalio.fullname" . }}-backend
+                port:
+                  name: http
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "eibtalio.fullname" . }}-guest
+                port:
+                  name: http
+{{- end }}
