@@ -2,7 +2,7 @@ apiVersion: v2
 name: unifi
 description: UniFi Network Application (all-in-one image with embedded MongoDB), optionally attached to the LAN via Multus with its own IP and a cert-manager certificate
 type: application
-version: 0.1.0
+version: 0.2.0
 appVersion: "10.6.106"
 
 maintainers:

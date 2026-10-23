@@ -4,6 +4,14 @@ metadata:
   name: {{ include "unifi.fullname" . }}
   labels:
     {{- include "unifi.labels" . | nindent 4 }}
+  {{- $annotations := deepCopy .Values.annotations }}
+  {{- if and .Values.certificate.enabled .Values.certificate.reloadOnRenewal }}
+  {{- $_ := set $annotations "secret.reloader.stakater.com/reload" (include "unifi.tlsSecret" .) }}
+  {{- end }}
+  {{- with $annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
 spec:
   replicas: 1
   serviceName: {{ include "unifi.fullname" . }}

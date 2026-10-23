@@ -16,9 +16,10 @@ jvm:
 # Additional environment variables (see the goofball222/unifi README)
 extraEnv: []
 
+# Annotations on the StatefulSet itself
+annotations: {}
+
 podAnnotations: {}
-  # Restart the pod when the certificate is renewed (requires stakater/reloader):
-  # secret.reloader.stakater.com/reload: unifi-tls
 
 resources:
   requests:
@@ -52,12 +53,14 @@ lan:
   interface: lan0
 
 # Certificate for the UniFi web UI (8443), imported into the Java keystore at startup.
-# cert-manager renews the secret; the pod must be restarted to pick it up (see podAnnotations).
+# cert-manager renews the secret; the pod must be restarted to pick it up (reloadOnRenewal).
 certificate:
   enabled: false
   # Create a cert-manager Certificate; otherwise reference existingSecret
   create: true
   existingSecret: ""
+  # Restart the pod when the certificate secret changes (requires stakater/reloader)
+  reloadOnRenewal: false
   dnsNames: []
   issuerRef:
     group: cert-manager.io
