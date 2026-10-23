@@ -1,0 +1,88 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "iobroker.fullname" . }}
+  labels:
+    {{- include "iobroker.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  serviceName: {{ include "iobroker.fullname" . }}
+  selector:
+    matchLabels:
+      {{- include "iobroker.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "iobroker.selectorLabels" . | nindent 8 }}
+      annotations:
+        {{- if .Values.lan.enabled }}
+        {{- $net := dict "name" (include "iobroker.networkName" .) "interface" .Values.lan.interface }}
+        {{- with .Values.lan.mac }}{{ $_ := set $net "mac" . }}{{ end }}
+        k8s.v1.cni.cncf.io/networks: {{ list $net | toJson | quote }}
+        {{- end }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      # The startup script compares the hostname with the one stored in ioBroker;
+      # the StatefulSet pod name (<fullname>-0) keeps it stable.
+      terminationGracePeriodSeconds: 60
+      containers:
+        - name: iobroker
+          image: {{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: TZ
+              value: {{ .Values.timezone | quote }}
+            {{- with .Values.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          ports:
+            - name: admin
+              containerPort: 8081
+            - name: web
+              containerPort: 8082
+          startupProbe:
+            tcpSocket:
+              port: admin
+            periodSeconds: {{ .Values.startupProbe.periodSeconds }}
+            failureThreshold: {{ .Values.startupProbe.failureThreshold }}
+          readinessProbe:
+            tcpSocket:
+              port: admin
+            periodSeconds: 10
+          livenessProbe:
+            exec:
+              command: ["/opt/scripts/healthcheck.sh"]
+            periodSeconds: 60
+            timeoutSeconds: 10
+            failureThreshold: 5
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: data
+              mountPath: /opt/iobroker
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes:
+          {{- toYaml .Values.persistence.accessModes | nindent 10 }}
+        {{- with .Values.persistence.storageClass }}
+        storageClassName: {{ . }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.persistence.size }}

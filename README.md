@@ -28,6 +28,7 @@ Collection of Helm charts for Kubernetes deployments.
 | [openshift-ldap-sync](charts/openshift-ldap-sync/) | OpenShift LDAP synchronization CronJob |
 | [renovate-cronjob](charts/renovate-cronjob/) | Renovate bot as Kubernetes CronJob |
 | [unifi](charts/unifi/) | UniFi Network Application with optional Multus LAN IP and cert-manager certificate |
+| [iobroker](charts/iobroker/) | ioBroker with optional InfluxDB 1.x and Multus LAN IP |
 
 ## Usage
 
