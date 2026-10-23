@@ -1,0 +1,143 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "unifi.fullname" . }}
+  labels:
+    {{- include "unifi.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  serviceName: {{ include "unifi.fullname" . }}
+  selector:
+    matchLabels:
+      {{- include "unifi.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "unifi.selectorLabels" . | nindent 8 }}
+      annotations:
+        {{- if .Values.lan.enabled }}
+        {{- $net := dict "name" (include "unifi.networkName" .) "interface" .Values.lan.interface }}
+        {{- with .Values.lan.mac }}{{ $_ := set $net "mac" . }}{{ end }}
+        k8s.v1.cni.cncf.io/networks: {{ list $net | toJson | quote }}
+        {{- end }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      # A single address is reserved per instance; never run two pods at once
+      terminationGracePeriodSeconds: 60
+      {{- if .Values.certificate.enabled }}
+      initContainers:
+        # The image imports cert.pem/privkey.pem into its keystore at startup and writes
+        # a checksum next to them, so the (read-only) secret is copied to a writable dir.
+        - name: copy-certificate
+          image: {{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - sh
+            - -c
+            - |
+              set -e
+              cp /tls/tls.crt /usr/lib/unifi/cert/cert.pem
+              cp /tls/tls.key /usr/lib/unifi/cert/privkey.pem
+              chmod 640 /usr/lib/unifi/cert/*.pem
+              chown -R 999:999 /usr/lib/unifi/cert
+          volumeMounts:
+            - name: tls
+              mountPath: /tls
+              readOnly: true
+            - name: cert
+              mountPath: /usr/lib/unifi/cert
+      {{- end }}
+      containers:
+        - name: unifi
+          image: {{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: TZ
+              value: {{ .Values.timezone | quote }}
+            - name: JVM_MAX_HEAP_SIZE
+              value: {{ .Values.jvm.maxHeapSize | quote }}
+            {{- with .Values.jvm.initHeapSize }}
+            - name: JVM_INIT_HEAP_SIZE
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          ports:
+            - name: https
+              containerPort: 8443
+            - name: inform
+              containerPort: 8080
+            - name: stun
+              containerPort: 3478
+              protocol: UDP
+            - name: discovery
+              containerPort: 10001
+              protocol: UDP
+            - name: speedtest
+              containerPort: 6789
+            - name: portal-http
+              containerPort: 8880
+            - name: portal-https
+              containerPort: 8843
+          startupProbe:
+            tcpSocket:
+              port: https
+            periodSeconds: {{ .Values.startupProbe.periodSeconds }}
+            failureThreshold: {{ .Values.startupProbe.failureThreshold }}
+          readinessProbe:
+            tcpSocket:
+              port: https
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: https
+            periodSeconds: 30
+            failureThreshold: 5
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: data
+              mountPath: /usr/lib/unifi/data
+            - name: logs
+              mountPath: /usr/lib/unifi/logs
+            {{- if .Values.certificate.enabled }}
+            - name: cert
+              mountPath: /usr/lib/unifi/cert
+            {{- end }}
+      volumes:
+        - name: logs
+          emptyDir: {}
+        {{- if .Values.certificate.enabled }}
+        - name: cert
+          emptyDir: {}
+        - name: tls
+          secret:
+            secretName: {{ include "unifi.tlsSecret" . }}
+        {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes:
+          {{- toYaml .Values.persistence.accessModes | nindent 10 }}
+        {{- with .Values.persistence.storageClass }}
+        storageClassName: {{ . }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.persistence.size }}
