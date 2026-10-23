@@ -45,7 +45,6 @@ ethernets:
   pod:
     match:
       macaddress: {{ .Values.podNetwork.mac | quote }}
-    set-name: pod0
     dhcp4: true
     dhcp4-overrides:
       use-routes: false
@@ -59,7 +58,6 @@ ethernets:
   lan:
     match:
       macaddress: {{ .Values.lan.mac | quote }}
-    set-name: lan0
     {{- if .Values.lan.address }}
     addresses:
       - {{ .Values.lan.address }}

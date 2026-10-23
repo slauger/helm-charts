@@ -5,7 +5,7 @@ Opinionated KubeVirt virtual machine for a home lab: Ubuntu cloud image as root 
 ## What the chart creates
 
 - `VirtualMachine` with a CDI `DataVolume` template importing `disk.image`
-- NICs: `pod0` (masquerade, only cluster CIDRs routed via it) and `lan0` (bridge, default route)
+- NICs: pod network (masquerade, only cluster CIDRs routed via it) and LAN (bridge, default route), matched by MAC
 - cloud-init: hostname/FQDN, static LAN address, root login with SSH keys only, `qemu-guest-agent` (KubeVirt then reports the LAN IP), `python3` for Ansible
 - optional `NetworkAttachmentDefinition` (bridge without IPAM) and `DNSEndpoint`
 
