@@ -1,0 +1,23 @@
+{{- if .Values.service.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "iobroker.fullname" . }}
+  labels:
+    {{- include "iobroker.labels" . | nindent 4 }}
+  {{- with .Values.service.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.service.type }}
+  selector:
+    {{- include "iobroker.selectorLabels" . | nindent 4 }}
+  ports:
+    - name: admin
+      port: {{ .Values.service.ports.admin }}
+      targetPort: admin
+    - name: web
+      port: {{ .Values.service.ports.web }}
+      targetPort: web
+{{- end }}

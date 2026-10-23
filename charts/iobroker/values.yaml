@@ -1,0 +1,104 @@
+# ioBroker based on the official image buanet/iobroker. The image only provides the OS
+# and Node.js; js-controller, adapters and all data live on the persistent volume
+# (/opt/iobroker) and are managed from the ioBroker admin UI.
+
+image:
+  repository: buanet/iobroker
+  # Defaults to the chart appVersion
+  tag: ""
+  pullPolicy: IfNotPresent
+
+timezone: Europe/Berlin
+
+# Debian packages installed by the image on every new container (env PACKAGES).
+# The defaults are the OS dependencies declared by the yahka adapter (HomeKit).
+packages:
+  - libavahi-compat-libdnssd-dev
+  - libpam0g-dev
+
+# Additional environment variables (see the buanet/iobroker documentation)
+extraEnv: []
+
+podAnnotations: {}
+
+resources:
+  requests:
+    cpu: 250m
+    memory: 1Gi
+  limits:
+    memory: 3Gi
+
+persistence:
+  # /opt/iobroker (js-controller, adapters, objects/states, backups)
+  size: 10Gi
+  storageClass: ""
+  accessModes:
+    - ReadWriteOnce
+
+# Attach the pod to the LAN with its own IP (Multus, bridge CNI). Needed for adapters
+# that are contacted by devices (shelly MQTT/CoAP, sonos callbacks) or use multicast
+# (yahka/HomeKit mDNS, discovery).
+lan:
+  enabled: false
+  # Host bridge on the node
+  bridge: br0
+  # Create a dedicated NetworkAttachmentDefinition for this release
+  createNetworkAttachment: true
+  # Use an existing NetworkAttachmentDefinition instead (namespace/name or name)
+  networkName: ""
+  # LAN subnet and the single address of this instance (host-local IPAM, one-address range)
+  subnet: ""      # e.g. 10.0.0.0/23
+  address: ""     # e.g. 10.0.0.4
+  # Fixed MAC address keeps ARP caches stable across restarts
+  mac: ""         # e.g. 02:00:00:00:00:04
+  interface: lan0
+
+# Cluster-internal service for the admin UI and web adapter
+service:
+  enabled: true
+  type: ClusterIP
+  annotations: {}
+  ports:
+    admin: 8081
+    web: 8082
+
+# Ingress for the admin UI (port 8081)
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  host: ""
+  # TLS without secretName uses the default certificate of the ingress controller
+  tls:
+    enabled: true
+    secretName: ""
+
+startupProbe:
+  # First start (initial install, npm) can take several minutes
+  periodSeconds: 10
+  failureThreshold: 90
+
+# InfluxDB 1.x for the influxdb adapter, reachable as <fullname>-influxdb:8086
+influxdb:
+  enabled: false
+  image:
+    repository: influxdb
+    tag: "1.13.1-alpine"
+    pullPolicy: IfNotPresent
+  # Additional environment variables (INFLUXDB_* config overrides)
+  extraEnv: []
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      memory: 1Gi
+  persistence:
+    size: 5Gi
+    storageClass: ""
+    accessModes:
+      - ReadWriteOnce
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
