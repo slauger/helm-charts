@@ -1,0 +1,77 @@
+{{- if not .Values.podNetwork.mac }}{{ fail "podNetwork.mac is required (stable MAC for the network config)" }}{{ end }}
+{{- if and .Values.lan.enabled (not .Values.lan.mac) }}{{ fail "lan.mac is required when lan.enabled=true" }}{{ end }}
+{{- if not .Values.ssh.authorizedKeys }}{{ fail "ssh.authorizedKeys must contain at least one key" }}{{ end }}
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: {{ include "lab-vm.fullname" . }}
+  labels:
+    {{- include "lab-vm.labels" . | nindent 4 }}
+spec:
+  runStrategy: {{ .Values.runStrategy }}
+  dataVolumeTemplates:
+    - metadata:
+        name: {{ include "lab-vm.fullname" . }}-root
+      spec:
+        storage:
+          {{- with .Values.disk.storageClass }}
+          storageClassName: {{ . }}
+          {{- end }}
+          resources:
+            requests:
+              storage: {{ .Values.disk.size }}
+        source:
+          http:
+            url: {{ .Values.disk.image }}
+  template:
+    metadata:
+      labels:
+        kubevirt.io/vm: {{ include "lab-vm.fullname" . }}
+        {{- include "lab-vm.labels" . | nindent 8 }}
+    spec:
+      hostname: {{ include "lab-vm.hostname" . }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      domain:
+        cpu:
+          cores: {{ .Values.cpu.cores }}
+        memory:
+          guest: {{ .Values.memory }}
+        devices:
+          disks:
+            - name: root
+              disk:
+                bus: virtio
+            - name: cloudinit
+              disk:
+                bus: virtio
+          interfaces:
+            - name: default
+              masquerade: {}
+              macAddress: {{ .Values.podNetwork.mac | quote }}
+            {{- if .Values.lan.enabled }}
+            - name: lan
+              bridge: {}
+              macAddress: {{ .Values.lan.mac | quote }}
+            {{- end }}
+          rng: {}
+      networks:
+        - name: default
+          pod: {}
+        {{- if .Values.lan.enabled }}
+        - name: lan
+          multus:
+            networkName: {{ include "lab-vm.networkName" . }}
+        {{- end }}
+      volumes:
+        - name: root
+          dataVolume:
+            name: {{ include "lab-vm.fullname" . }}-root
+        - name: cloudinit
+          cloudInitNoCloud:
+            networkData: |
+              {{- include "lab-vm.networkData" . | nindent 14 }}
+            userData: |
+              {{- include "lab-vm.userData" . | nindent 14 }}

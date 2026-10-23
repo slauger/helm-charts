@@ -1,0 +1,62 @@
+# Opinionated KubeVirt VM: Ubuntu cloud image, one NIC on the pod network (masquerade)
+# and one bridged NIC on the LAN with a static address. cloud-init only does the base
+# setup (hostname, network, root SSH key, qemu-guest-agent); software is managed
+# afterwards, e.g. with Ansible.
+
+# Hostname inside the VM, defaults to the release name
+hostname: ""
+
+runStrategy: Always
+
+cpu:
+  cores: 2
+memory: 4Gi
+
+disk:
+  size: 30Gi
+  storageClass: ""
+  # Cloud image the root disk is imported from (CDI DataVolume, http source)
+  image: https://cloud-images.ubuntu.com/releases/resolute/release/ubuntu-26.04-server-cloudimg-amd64.img
+
+# Pod network NIC (masquerade). Cluster traffic is routed via this NIC so that
+# replies to pods/services (e.g. virtctl ssh) do not leave via the LAN.
+podNetwork:
+  mac: ""                       # e.g. 02:00:00:00:01:01
+  clusterCIDRs:
+    - 10.42.0.0/16
+    - 10.43.0.0/16
+  gateway: 10.0.2.1             # KubeVirt masquerade gateway
+
+# LAN NIC on a Linux bridge of the node (Multus, bridge CNI without IPAM).
+lan:
+  enabled: true
+  bridge: br0
+  # Create a NetworkAttachmentDefinition for this release; otherwise use networkName
+  createNetworkAttachment: true
+  networkName: ""               # existing NAD (namespace/name or name)
+  mac: ""                       # e.g. 02:00:00:00:01:c9 - keep it stable
+  # Static configuration inside the guest; empty address = DHCP
+  address: ""                   # e.g. 10.0.0.201/23
+  gateway: ""                   # e.g. 10.0.0.1
+  nameservers: []               # e.g. [10.0.0.1]
+  searchDomains: []
+
+# Root login with SSH keys only (no passwords)
+ssh:
+  authorizedKeys: []
+
+cloudInit:
+  # Packages installed on first boot (python3 for Ansible)
+  packages:
+    - qemu-guest-agent
+    - python3
+  # Additional cloud-config merged into the generated user data (YAML object)
+  extraUserData: {}
+
+# ExternalDNS DNSEndpoint for the LAN address
+dns:
+  enabled: false
+  hostname: ""                  # e.g. vm01.example.com
+  ttl: 300
+
+nodeSelector: {}

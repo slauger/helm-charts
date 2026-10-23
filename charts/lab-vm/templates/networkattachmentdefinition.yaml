@@ -1,0 +1,18 @@
+{{- if and .Values.lan.enabled .Values.lan.createNetworkAttachment }}
+# Bridge to the LAN without IPAM; the guest configures its address itself.
+apiVersion: k8s.cni.cncf.io/v1
+kind: NetworkAttachmentDefinition
+metadata:
+  name: {{ include "lab-vm.networkName" . }}
+  labels:
+    {{- include "lab-vm.labels" . | nindent 4 }}
+spec:
+  config: |
+    {
+      "cniVersion": "0.3.1",
+      "name": {{ include "lab-vm.networkName" . | quote }},
+      "type": "bridge",
+      "bridge": {{ .Values.lan.bridge | quote }},
+      "ipam": {}
+    }
+{{- end }}
