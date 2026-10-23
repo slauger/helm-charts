@@ -1,0 +1,88 @@
+# UniFi Network Application based on goofball222/unifi (controller + embedded MongoDB).
+
+image:
+  repository: goofball222/unifi
+  # Defaults to the chart appVersion
+  tag: ""
+  pullPolicy: IfNotPresent
+
+timezone: Europe/Berlin
+
+# Java heap of the UniFi process
+jvm:
+  maxHeapSize: 1024M
+  initHeapSize: ""
+
+# Additional environment variables (see the goofball222/unifi README)
+extraEnv: []
+
+podAnnotations: {}
+  # Restart the pod when the certificate is renewed (requires stakater/reloader):
+  # secret.reloader.stakater.com/reload: unifi-tls
+
+resources:
+  requests:
+    cpu: 250m
+    memory: 1Gi
+  limits:
+    memory: 2Gi
+
+persistence:
+  # /usr/lib/unifi/data (configuration, embedded MongoDB, keystore)
+  size: 10Gi
+  storageClass: ""
+  accessModes:
+    - ReadWriteOnce
+
+# Attach the pod to the LAN with its own IP (Multus, bridge CNI). This makes UniFi
+# reachable like an appliance: device inform, STUN and L2 discovery (10001/udp).
+lan:
+  enabled: false
+  # Host bridge on the node
+  bridge: br0
+  # Create a dedicated NetworkAttachmentDefinition for this release
+  createNetworkAttachment: true
+  # Use an existing NetworkAttachmentDefinition instead (namespace/name or name)
+  networkName: ""
+  # LAN subnet and the single address of this instance (host-local IPAM, one-address range)
+  subnet: ""      # e.g. 10.0.0.0/23
+  address: ""     # e.g. 10.0.1.50
+  # Fixed MAC address keeps ARP caches and DHCP leases stable across restarts
+  mac: ""         # e.g. 02:00:00:00:02:50
+  interface: lan0
+
+# Certificate for the UniFi web UI (8443), imported into the Java keystore at startup.
+# cert-manager renews the secret; the pod must be restarted to pick it up (see podAnnotations).
+certificate:
+  enabled: false
+  # Create a cert-manager Certificate; otherwise reference existingSecret
+  create: true
+  existingSecret: ""
+  dnsNames: []
+  issuerRef:
+    group: cert-manager.io
+    kind: ClusterIssuer
+    name: letsencrypt-prod
+
+# ExternalDNS DNSEndpoint pointing the hostname to the LAN address
+dns:
+  enabled: false
+  hostname: ""
+  ttl: 300
+  # Defaults to lan.address
+  target: ""
+
+# Cluster-internal service (UI and inform)
+service:
+  enabled: true
+  type: ClusterIP
+  annotations: {}
+
+startupProbe:
+  # UniFi + MongoDB take a while on first start
+  periodSeconds: 10
+  failureThreshold: 60
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

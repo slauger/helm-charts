@@ -1,0 +1,15 @@
+{{- if .Values.dns.enabled }}
+apiVersion: externaldns.k8s.io/v1alpha1
+kind: DNSEndpoint
+metadata:
+  name: {{ include "unifi.fullname" . }}
+  labels:
+    {{- include "unifi.labels" . | nindent 4 }}
+spec:
+  endpoints:
+    - dnsName: {{ required "dns.hostname is required" .Values.dns.hostname }}
+      recordType: A
+      recordTTL: {{ .Values.dns.ttl }}
+      targets:
+        - {{ .Values.dns.target | default .Values.lan.address | required "dns.target or lan.address is required" }}
+{{- end }}

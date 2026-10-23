@@ -1,0 +1,14 @@
+{{- if and .Values.certificate.enabled .Values.certificate.create }}
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ include "unifi.fullname" . }}
+  labels:
+    {{- include "unifi.labels" . | nindent 4 }}
+spec:
+  secretName: {{ include "unifi.tlsSecret" . }}
+  dnsNames:
+    {{- required "certificate.dnsNames is required" .Values.certificate.dnsNames | toYaml | nindent 4 }}
+  issuerRef:
+    {{- toYaml .Values.certificate.issuerRef | nindent 4 }}
+{{- end }}

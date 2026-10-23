@@ -27,6 +27,7 @@ Collection of Helm charts for Kubernetes deployments.
 | [openshift-cacheclear](charts/openshift-cacheclear/) | OpenShift cache clearing CronJob |
 | [openshift-ldap-sync](charts/openshift-ldap-sync/) | OpenShift LDAP synchronization CronJob |
 | [renovate-cronjob](charts/renovate-cronjob/) | Renovate bot as Kubernetes CronJob |
+| [unifi](charts/unifi/) | UniFi Network Application with optional Multus LAN IP and cert-manager certificate |
 
 ## Usage
 
