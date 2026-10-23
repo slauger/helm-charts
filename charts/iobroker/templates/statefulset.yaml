@@ -34,6 +34,10 @@ spec:
           env:
             - name: TZ
               value: {{ .Values.timezone | quote }}
+            {{- with .Values.packages }}
+            - name: PACKAGES
+              value: {{ join " " . | quote }}
+            {{- end }}
             {{- with .Values.extraEnv }}
             {{- toYaml . | nindent 12 }}
             {{- end }}

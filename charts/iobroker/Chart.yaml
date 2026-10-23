@@ -2,7 +2,7 @@ apiVersion: v2
 name: iobroker
 description: ioBroker smart home platform (official buanet image) with optional InfluxDB 1.x, attached to the LAN via Multus with its own IP
 type: application
-version: 0.1.0
+version: 0.2.0
 appVersion: "v12.0.0"
 
 maintainers:

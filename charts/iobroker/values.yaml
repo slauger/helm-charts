@@ -10,8 +10,13 @@ image:
 
 timezone: Europe/Berlin
 
-# Additional environment variables (see the buanet/iobroker documentation),
-# e.g. PACKAGES for extra Debian packages
+# Debian packages installed by the image on every new container (env PACKAGES).
+# The defaults are the OS dependencies declared by the yahka adapter (HomeKit).
+packages:
+  - libavahi-compat-libdnssd-dev
+  - libpam0g-dev
+
+# Additional environment variables (see the buanet/iobroker documentation)
 extraEnv: []
 
 podAnnotations: {}
