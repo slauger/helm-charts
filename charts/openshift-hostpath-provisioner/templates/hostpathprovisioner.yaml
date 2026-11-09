@@ -1,0 +1,32 @@
+{{- if .Values.hostPathProvisioner.enabled }}
+apiVersion: hostpathprovisioner.kubevirt.io/v1beta1
+kind: HostPathProvisioner
+metadata:
+  name: {{ .Values.hostPathProvisioner.name }}
+  labels:
+    {{- include "openshift-hostpath-provisioner.labels" . | nindent 4 }}
+spec:
+  imagePullPolicy: {{ .Values.hostPathProvisioner.imagePullPolicy }}
+  storagePools:
+    {{- range .Values.hostPathProvisioner.storagePools }}
+    - name: {{ .name | quote }}
+      path: {{ .path | quote }}
+      {{- with .pvcTemplate }}
+      pvcTemplate:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    {{- end }}
+  workload:
+    {{- with .Values.hostPathProvisioner.workload.nodeSelector }}
+    nodeSelector:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+    {{- with .Values.hostPathProvisioner.workload.tolerations }}
+    tolerations:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+    {{- with .Values.hostPathProvisioner.workload.affinity }}
+    affinity:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+{{- end }}

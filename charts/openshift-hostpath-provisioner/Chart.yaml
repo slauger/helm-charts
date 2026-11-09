@@ -1,0 +1,21 @@
+apiVersion: v2
+name: openshift-hostpath-provisioner
+description: Local dynamic storage on OpenShift via the KubeVirt HostPath Provisioner (HPP) CSI driver
+type: application
+version: 0.1.0
+appVersion: "0.21.0"
+keywords:
+  - openshift
+  - storage
+  - hostpath
+  - hpp
+  - kubevirt
+  - csi
+  - local-storage
+home: https://github.com/slauger/helm-charts
+sources:
+  - https://github.com/slauger/helm-charts
+  - https://github.com/kubevirt/hostpath-provisioner-operator
+maintainers:
+  - name: Simon Lauger
+    email: simon@lauger.de

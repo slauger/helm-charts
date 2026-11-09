@@ -1,0 +1,21 @@
+{{- range .Values.storageClasses }}
+{{- if not .name }}{{ fail "each entry in .Values.storageClasses must set .name" }}{{ end }}
+{{- if not .storagePool }}{{ fail (printf "storageClass %q must set .storagePool" .name) }}{{ end }}
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: {{ .name }}
+  labels:
+    {{- include "openshift-hostpath-provisioner.labels" $ | nindent 4 }}
+  {{- if .isDefault }}
+  annotations:
+    storageclass.kubernetes.io/is-default-class: "true"
+  {{- end }}
+provisioner: kubevirt.io.hostpath-provisioner
+reclaimPolicy: {{ .reclaimPolicy | default "Delete" }}
+volumeBindingMode: {{ .volumeBindingMode | default "WaitForFirstConsumer" }}
+allowVolumeExpansion: {{ .allowVolumeExpansion | default false }}
+parameters:
+  storagePool: {{ .storagePool | quote }}
+{{- end }}

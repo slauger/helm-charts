@@ -1,0 +1,28 @@
+{{- if .Values.machineConfig.enabled }}
+apiVersion: machineconfiguration.openshift.io/v1
+kind: MachineConfig
+metadata:
+  name: 50-hpp-hostpath-dir
+  labels:
+    machineconfiguration.openshift.io/role: {{ .Values.machineConfig.role }}
+    {{- include "openshift-hostpath-provisioner.labels" . | nindent 4 }}
+spec:
+  config:
+    ignition:
+      version: 3.2.0
+    systemd:
+      units:
+        - name: hpp-make-hostpath.service
+          enabled: true
+          contents: |
+            [Unit]
+            Description=Create and label HPP hostpath directory
+            Before=kubelet.service
+            [Service]
+            Type=oneshot
+            RemainAfterExit=yes
+            ExecStart=/usr/bin/mkdir -p {{ .Values.machineConfig.path }}
+            ExecStart=/usr/bin/chcon -R -t container_file_t {{ .Values.machineConfig.path }}
+            [Install]
+            WantedBy=multi-user.target
+{{- end }}
