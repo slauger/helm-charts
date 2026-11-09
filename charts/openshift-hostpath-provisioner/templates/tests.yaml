@@ -1,0 +1,42 @@
+{{- if .Values.test.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Release.Name }}-hpp-test
+  labels:
+    {{- include "openshift-hostpath-provisioner.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.test.size }}
+  storageClassName: {{ .Values.test.storageClassName }}
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: {{ .Release.Name }}-hpp-test
+  labels:
+    {{- include "openshift-hostpath-provisioner.labels" . | nindent 4 }}
+spec:
+  securityContext:
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+    - name: app
+      image: {{ .Values.test.image }}
+      command: ["/bin/sh", "-c", "echo hpp-ok > /data/test.txt && sleep 3600"]
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop: ["ALL"]
+      volumeMounts:
+        - name: data
+          mountPath: /data
+  volumes:
+    - name: data
+      persistentVolumeClaim:
+        claimName: {{ .Release.Name }}-hpp-test
+{{- end }}

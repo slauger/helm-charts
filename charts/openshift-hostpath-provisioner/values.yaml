@@ -1,0 +1,71 @@
+# Default values for openshift-hostpath-provisioner.
+# This chart deploys only the resources on top of an already-installed
+# HostPath Provisioner (HPP) operator. It does NOT install the operator,
+# its subscription, cert-manager or the CSI driver itself.
+
+# -- Namespace the HostPathProvisioner CR is reconciled in.
+# Use "hostpath-provisioner" for the standalone upstream operator, or
+# "openshift-cnv" when HPP ships with OpenShift Virtualization (CNV).
+# Left as a value only for documentation/templating; the CR is namespaced
+# by the release namespace (-n) at install time.
+
+# HostPathProvisioner custom resource.
+hostPathProvisioner:
+  # -- Render the HostPathProvisioner CR. Set to false to manage the CR elsewhere.
+  enabled: true
+  # -- Name of the HostPathProvisioner CR (cluster-reconciled singleton, usually "hostpath-provisioner").
+  name: hostpath-provisioner
+  imagePullPolicy: IfNotPresent
+  # -- Storage pools backing the persistent volumes. Each pool maps a name to a
+  # node filesystem path. The pool name is referenced from a storageClass below.
+  storagePools:
+    - name: local
+      path: /var/hpvolumes
+      # Optional PVC template turns a pool into a "pvcTemplate" pool (carves
+      # dynamic volumes out of one large backing PVC). Omit for a basic pool.
+      # pvcTemplate:
+      #   storageClassName: my-block-sc
+      #   accessModes:
+      #     - ReadWriteOnce
+      #   resources:
+      #     requests:
+      #       storage: 50Gi
+  workload:
+    nodeSelector:
+      kubernetes.io/os: linux
+    # tolerations: []
+    # affinity: {}
+
+# StorageClasses that expose the storage pools above.
+storageClasses:
+  - name: hostpath-csi
+    # -- Reference a storagePool defined under hostPathProvisioner.storagePools.
+    storagePool: local
+    isDefault: false
+    reclaimPolicy: Delete
+    volumeBindingMode: WaitForFirstConsumer
+    allowVolumeExpansion: false
+
+# MachineConfig that pre-creates the storage pool directory on RHCOS nodes and
+# sets the correct SELinux context (container_file_t). Applying it triggers a
+# rolling node reboot via the Machine Config Operator.
+#
+# WARNING: With a basic pool, the path lives on the RHCOS root disk (shared with
+# the OS, etcd, container images, logs). Red Hat advises against placing the
+# storage pool on the OS partition: a full OS partition can destabilize the node.
+machineConfig:
+  # -- Render the MachineConfig. Disable if the directory is provisioned another way.
+  enabled: true
+  # -- MachineConfigPool role the config targets ("worker", or "master" for SNO).
+  role: worker
+  # -- Node filesystem path to create and SELinux-label. Keep in sync with the pool path.
+  path: /var/hpvolumes
+
+# Optional verification workload: a PVC plus an unprivileged (restricted-v2) pod
+# that writes to the volume. Proves workloads need no privileged/hostPath access.
+test:
+  # -- Render the test PVC and pod. Leave false for normal installs.
+  enabled: false
+  storageClassName: hostpath-csi
+  size: 1Gi
+  image: registry.access.redhat.com/ubi9/ubi-minimal
