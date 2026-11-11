@@ -6,6 +6,8 @@ metadata:
     {{- include "shelve.labels" . | nindent 4 }}
 spec:
   instances: {{ .Values.postgresql.instances }}
+  # A PDB on a single instance blocks every node drain.
+  enablePDB: {{ gt (int .Values.postgresql.instances) 1 }}
   storage:
     size: {{ .Values.postgresql.storage.size }}
   bootstrap:
