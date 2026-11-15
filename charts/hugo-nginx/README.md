@@ -164,6 +164,38 @@ http {
 | `autoscaling.targetCPUUtilizationPercentage` | Target CPU % | `80` |
 | `podDisruptionBudget.enabled` | Enable PDB | `false` |
 | `podDisruptionBudget.minAvailable` | Minimum available pods | `1` |
+| `podSecurityContext.seccompProfile.type` | Seccomp profile | `RuntimeDefault` |
+| `securityContext.readOnlyRootFilesystem` | Read-only root filesystem (needs writable `extraVolumes`) | `false` |
+| `serviceAccount.automountToken` | Mount the service account token | `false` |
+| `extraVolumes` / `extraVolumeMounts` | Additional volumes and mounts | `[]` |
+| `networkPolicy.enabled` | NetworkPolicy: ingress on the http port only from `networkPolicy.ingressFrom`, no egress | `false` |
+| `networkPolicy.ingressFrom` | Allowed peers, e.g. the ingress controller | `[]` |
+
+### Hardened example
+
+```yaml
+securityContext:
+  readOnlyRootFilesystem: true
+extraVolumes:
+  - name: tmp
+    emptyDir: {}
+  - name: cache
+    emptyDir: {}
+extraVolumeMounts:
+  - name: tmp
+    mountPath: /tmp
+  - name: cache
+    mountPath: /var/cache/nginx
+networkPolicy:
+  enabled: true
+  ingressFrom:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: kube-system
+      podSelector:
+        matchLabels:
+          app.kubernetes.io/name: traefik
+```
 
 See `values.yaml` for all available options.
 
