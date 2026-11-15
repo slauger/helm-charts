@@ -25,6 +25,7 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       serviceAccountName: {{ include "library.serviceAccountName" . }}
+      automountServiceAccountToken: {{ .Values.serviceAccount.automountToken }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
@@ -51,6 +52,14 @@ spec:
           {{- toYaml .Values.readinessProbe | nindent 12 }}
         resources:
           {{- toYaml .Values.resources | nindent 12 }}
+        {{- with .Values.extraVolumeMounts }}
+        volumeMounts:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+      {{- with .Values.extraVolumes }}
+      volumes:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

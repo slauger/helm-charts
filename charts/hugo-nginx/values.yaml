@@ -28,6 +28,8 @@ serviceAccount:
   annotations: {}
   # The name of the service account to use
   name: ""
+  # Mount the service account token (nginx does not talk to the API server)
+  automountToken: false
 
 # Pod annotations
 podAnnotations: {}
@@ -37,6 +39,8 @@ podSecurityContext:
   runAsNonRoot: true
   runAsUser: 101  # nginx user
   fsGroup: 101
+  seccompProfile:
+    type: RuntimeDefault
 
 # Container security context
 securityContext:
@@ -44,6 +48,7 @@ securityContext:
   capabilities:
     drop:
       - ALL
+  # Set to true together with writable extraVolumes for /tmp and /var/cache/nginx
   readOnlyRootFilesystem: false
   runAsNonRoot: true
   runAsUser: 101
@@ -82,6 +87,32 @@ ingress:
   #   - secretName: example-tls
   #     hosts:
   #       - example.com
+
+# Additional volumes and mounts, e.g. emptyDirs for a read-only root filesystem:
+# extraVolumes:
+#   - name: tmp
+#     emptyDir: {}
+#   - name: cache
+#     emptyDir: {}
+# extraVolumeMounts:
+#   - name: tmp
+#     mountPath: /tmp
+#   - name: cache
+#     mountPath: /var/cache/nginx
+extraVolumes: []
+extraVolumeMounts: []
+
+# NetworkPolicy: deny everything except ingress on the http port from the given
+# peers (e.g. the ingress controller); no egress
+networkPolicy:
+  enabled: false
+  ingressFrom: []
+  # - namespaceSelector:
+  #     matchLabels:
+  #       kubernetes.io/metadata.name: kube-system
+  #   podSelector:
+  #     matchLabels:
+  #       app.kubernetes.io/name: traefik
 
 # Resource limits and requests
 resources:
