@@ -1,0 +1,53 @@
+{{- if .Values.networkPolicy.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "squid.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "squid.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "squid.selectorLabels" . | nindent 6 }}
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        {{- if .Values.networkPolicy.from }}
+        {{- toYaml .Values.networkPolicy.from | nindent 8 }}
+        {{- else }}
+        - podSelector: {}
+        {{- end }}
+      ports:
+        - port: {{ .Values.port }}
+          protocol: TCP
+  egress:
+    - to:
+        - namespaceSelector:
+            {{- toYaml .Values.networkPolicy.dns.namespaceSelector | nindent 12 }}
+      ports:
+        - port: {{ .Values.networkPolicy.dns.port }}
+          protocol: UDP
+        - port: {{ .Values.networkPolicy.dns.port }}
+          protocol: TCP
+    - to:
+        - ipBlock:
+            cidr: {{ .Values.networkPolicy.egressCIDR }}
+            {{- $except := list }}
+            {{- range .Values.privateDestinations }}
+            {{- if and (contains "/" .) (not (contains ":" .)) (ne . $.Values.networkPolicy.egressCIDR) }}
+            {{- $except = append $except . }}
+            {{- end }}
+            {{- end }}
+            {{- if $except }}
+            except:
+              {{- toYaml $except | nindent 14 }}
+            {{- end }}
+      ports:
+        {{- range .Values.allowedPorts }}
+        - port: {{ . }}
+          protocol: TCP
+        {{- end }}
+{{- end }}

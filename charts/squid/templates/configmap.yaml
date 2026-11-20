@@ -1,0 +1,54 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "squid.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "squid.labels" . | nindent 4 }}
+data:
+  squid.conf: |
+    # Forward proxy without cache; logs go to the container output
+    http_port {{ .Values.port }}
+    pid_filename none
+    pinger_enable off
+    cache deny all
+    cache_mem 0 MB
+    access_log stdio:/dev/stdout
+    cache_log stdio:/dev/stderr
+    logfile_rotate 0
+    coredump_dir /tmp
+    shutdown_lifetime 3 seconds
+    # Without a limit Squid sizes its tables after RLIMIT_NOFILE of the container runtime
+    max_filedescriptors {{ .Values.maxFiledescriptors }}
+    forwarded_for delete
+
+    acl clients src {{ join " " .Values.allowedClients }}
+    acl safe_ports port {{ join " " .Values.allowedPorts }}
+    acl CONNECT method CONNECT
+    {{- if .Values.connectPorts }}
+    acl connect_ports port {{ join " " .Values.connectPorts }}
+    {{- end }}
+    {{- if .Values.denyPrivateDestinations }}
+    acl private_destinations dst {{ join " " .Values.privateDestinations }}
+    {{- end }}
+    {{- if .Values.allowedDomains }}
+    acl allowed_domains dstdomain {{ join " " .Values.allowedDomains }}
+    {{- end }}
+
+    http_access deny !clients
+    http_access deny !safe_ports
+    {{- if .Values.connectPorts }}
+    http_access deny CONNECT !connect_ports
+    {{- else }}
+    http_access deny CONNECT
+    {{- end }}
+    {{- if .Values.denyPrivateDestinations }}
+    http_access deny private_destinations
+    {{- end }}
+    {{- with .Values.extraConfig }}
+    {{- . | nindent 4 }}
+    {{- end }}
+    {{- if .Values.allowedDomains }}
+    http_access allow allowed_domains
+    {{- end }}
+    http_access deny all

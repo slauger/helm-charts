@@ -1,0 +1,107 @@
+# Squid as forward proxy for HTTP and HTTPS (CONNECT), without cache and without
+# authentication. Clients are trusted by network (allowedClients plus the NetworkPolicy);
+# destinations are restricted to allowedDomains.
+
+image:
+  # Canonical's Ubuntu rock, rebuilt with security updates of the Ubuntu archive
+  repository: ubuntu/squid
+  # Defaults to the chart appVersion. The _edge tags move with every rebuild; pin a digest
+  # for reproducible deployments or use pullPolicy Always to pick up patched builds.
+  tag: ""
+  digest: ""
+  pullPolicy: IfNotPresent
+
+replicaCount: 1
+
+nameOverride: ""
+fullnameOverride: ""
+
+port: 3128
+
+# Concurrent connections are bounded by this (each client and server connection uses one)
+maxFiledescriptors: 4096
+
+# Destinations clients may reach (Squid dstdomain): "example.com" matches only that host,
+# ".example.com" the domain and all subdomains. Empty denies everything.
+allowedDomains: []
+
+# Destination ports for plain HTTP requests and CONNECT tunnels
+allowedPorts:
+  - 80
+  - 443
+
+# Ports CONNECT (HTTPS tunnels) may go to; empty disables CONNECT
+connectPorts:
+  - 443
+
+# Source networks allowed to use the proxy (Squid src)
+allowedClients:
+  - 10.0.0.0/8
+  - 172.16.0.0/12
+  - 192.168.0.0/16
+  - fc00::/7
+
+# Refuse destinations that resolve to private, loopback, link-local (cloud metadata) or
+# carrier-grade NAT addresses, also when an allowed domain points there
+denyPrivateDestinations: true
+privateDestinations:
+  - 0.0.0.0/8
+  - 10.0.0.0/8
+  - 100.64.0.0/10
+  - 127.0.0.0/8
+  - 169.254.0.0/16
+  - 172.16.0.0/12
+  - 192.168.0.0/16
+  - ::1
+  - fc00::/7
+  - fe80::/10
+
+# Appended to squid.conf before the final "http_access deny all"
+extraConfig: ""
+
+service:
+  type: ClusterIP
+  annotations: {}
+
+networkPolicy:
+  enabled: true
+  # Who may connect to the proxy (NetworkPolicy peers). Empty allows all pods of the
+  # release namespace.
+  from: []
+  # DNS servers the proxy resolves with
+  dns:
+    namespaceSelector:
+      matchLabels:
+        kubernetes.io/metadata.name: kube-system
+    port: 53
+  # Egress to allowedPorts on any address except privateDestinations (IPv4 entries only)
+  egressCIDR: 0.0.0.0/0
+
+podAnnotations: {}
+podLabels: {}
+
+podSecurityContext:
+  runAsNonRoot: true
+  # _daemon_ user of the rock
+  runAsUser: 584792
+  runAsGroup: 584792
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+      - ALL
+
+resources:
+  requests:
+    cpu: 10m
+    memory: 32Mi
+  limits:
+    memory: 128Mi
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
