@@ -1,0 +1,22 @@
+apiVersion: v2
+name: squid
+description: Squid forward proxy with a domain allowlist and a NetworkPolicy, one small instance per use case (for example the egress of one agent namespace)
+type: application
+version: 0.1.0
+appVersion: "7.2-26.04_edge"
+
+maintainers:
+  - name: Simon Lauger
+    email: simon@lauger.de
+    url: https://lauger.de
+
+keywords:
+  - squid
+  - proxy
+  - egress
+  - networkpolicy
+
+home: https://github.com/slauger/helm-charts
+sources:
+  - https://github.com/slauger/helm-charts
+  - https://hub.docker.com/r/ubuntu/squid

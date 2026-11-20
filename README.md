@@ -31,6 +31,7 @@ Collection of Helm charts for Kubernetes deployments.
 | [iobroker](charts/iobroker/) | ioBroker with optional InfluxDB 1.x and Multus LAN IP |
 | [lab-vm](charts/lab-vm/) | Opinionated KubeVirt VM with static LAN IP, cloud-init base setup and DNS record |
 | [openshift-hostpath-provisioner](charts/openshift-hostpath-provisioner/) | Local dynamic storage on OpenShift via the KubeVirt HostPath Provisioner CSI driver |
+| [squid](charts/squid/) | Squid forward proxy with domain allowlist and NetworkPolicy, one instance per use case |
 
 ## Usage
 
