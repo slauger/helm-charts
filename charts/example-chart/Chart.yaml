@@ -2,7 +2,7 @@ apiVersion: v2
 name: example-chart
 description: Example Helm chart demonstrating common Kubernetes deployment patterns
 type: application
-version: 0.1.0
+version: 0.1.1
 appVersion: "1.16.0"
 keywords:
   - example

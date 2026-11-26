@@ -1,0 +1,8 @@
+# chart-testing (ct) configuration, see https://github.com/helm/chart-testing
+target-branch: main
+chart-dirs:
+  - charts
+# Maintainer names are full names, not GitHub accounts
+validate-maintainers: false
+# A changed chart must bump its version, otherwise the release workflow skips it
+check-version-increment: true
