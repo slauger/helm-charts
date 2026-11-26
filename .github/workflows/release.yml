@@ -7,16 +7,22 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
+
+concurrency:
+  group: release-charts
+  cancel-in-progress: false
 
 jobs:
   release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          persist-credentials: false
 
       - name: Install Helm
         uses: azure/setup-helm@v4
@@ -37,6 +43,7 @@ jobs:
       - name: Create GitHub Releases (idempotent)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
         run: |
           for package in .cr-release-packages/*.tgz; do
             [ -f "$package" ] || continue
@@ -52,11 +59,26 @@ jobs:
             fi
           done
 
+      # Der Index wird aus den Paketen gebaut, die tatsächlich als Release-Assets liegen:
+      # alle Versionen bleiben installierbar, und der Digest im Index passt zum Asset
+      # (helm package ist nicht reproduzierbar, ein frisch gepacktes .tgz hat einen anderen Digest).
+      - name: Download released chart packages
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          mkdir -p .cr-index
+          gh release list --limit 1000 --exclude-drafts --json tagName --jq '.[].tagName' |
+            while read -r tag; do
+              gh release download "$tag" --pattern "$tag.tgz" --dir .cr-index \
+                || echo "::warning::Release $tag has no asset $tag.tgz"
+            done
+
       - name: Generate Helm Repository Index
         run: |
-          helm repo index .cr-release-packages --url https://github.com/slauger/helm-charts/releases/download
+          helm repo index .cr-index --url https://github.com/slauger/helm-charts/releases/download
           # Asset-URLs auf das Tag-Verzeichnis umbiegen: /download/TAG/ASSET statt /download/ASSET
-          sed -i 's|releases/download/\([^/]*\)\.tgz|releases/download/\1/\1.tgz|g' .cr-release-packages/index.yaml
+          sed -i 's|releases/download/\([^/]*\)\.tgz|releases/download/\1/\1.tgz|g' .cr-index/index.yaml
 
       # Nur die index.yaml auf den gh-pages-Branch (die Charts liegen als Release-Assets).
       # Force-Push: gh-pages ist ein Single-Commit-Branch mit ausschließlich der aktuellen index.yaml.
@@ -65,7 +87,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           work=$(mktemp -d)
-          cp .cr-release-packages/index.yaml "$work/index.yaml"
+          cp .cr-index/index.yaml "$work/index.yaml"
           cd "$work"
           git init -q -b gh-pages
           git add index.yaml
