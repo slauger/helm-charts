@@ -38,7 +38,7 @@ spec:
           containerPort: 5000
           protocol: TCP
         env:
-        {{- if .Values.auth.htpasswd }}
+        {{- if include "hcloud-registry.authEnabled" . }}
         - name: REGISTRY_AUTH
           value: "htpasswd"
         - name: REGISTRY_AUTH_HTPASSWD_REALM
@@ -54,17 +54,17 @@ spec:
           value: {{ .Values.storage.s3.region | quote }}
         - name: REGISTRY_STORAGE_S3_REGIONENDPOINT
           value: {{ .Values.storage.s3.endpoint | quote }}
-        {{- if and .Values.storage.s3.accessKey .Values.storage.s3.secretKey }}
+        {{- if include "hcloud-registry.s3CredentialsEnabled" . }}
         - name: REGISTRY_STORAGE_S3_ACCESSKEY
           valueFrom:
             secretKeyRef:
-              name: {{ include "hcloud-registry.fullname" . }}-s3
-              key: accessKey
+              name: {{ include "hcloud-registry.s3SecretName" . }}
+              key: {{ include "hcloud-registry.s3AccessKeyKey" . }}
         - name: REGISTRY_STORAGE_S3_SECRETKEY
           valueFrom:
             secretKeyRef:
-              name: {{ include "hcloud-registry.fullname" . }}-s3
-              key: secretKey
+              name: {{ include "hcloud-registry.s3SecretName" . }}
+              key: {{ include "hcloud-registry.s3SecretKeyKey" . }}
         {{- end }}
         - name: REGISTRY_STORAGE_S3_ENCRYPT
           value: {{ .Values.storage.s3.encrypt | quote }}
@@ -82,7 +82,7 @@ spec:
           value: "10s"
         - name: REGISTRY_HEALTH_STORAGEDRIVER_THRESHOLD
           value: "3"
-        {{- if .Values.auth.htpasswd }}
+        {{- if include "hcloud-registry.authEnabled" . }}
         volumeMounts:
         - name: auth
           mountPath: /auth
@@ -94,13 +94,13 @@ spec:
           {{- toYaml .Values.readinessProbe | nindent 12 }}
         resources:
           {{- toYaml .Values.resources | nindent 12 }}
-      {{- if .Values.auth.htpasswd }}
+      {{- if include "hcloud-registry.authEnabled" . }}
       volumes:
       - name: auth
         secret:
-          secretName: {{ include "hcloud-registry.fullname" . }}-auth
+          secretName: {{ include "hcloud-registry.authSecretName" . }}
           items:
-          - key: htpasswd
+          - key: {{ include "hcloud-registry.authSecretKey" . }}
             path: htpasswd
       {{- end }}
       {{- with .Values.nodeSelector }}

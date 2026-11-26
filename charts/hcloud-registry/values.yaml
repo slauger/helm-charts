@@ -6,7 +6,8 @@
 image:
   registry: docker.io
   repository: registry
-  tag: "2.8.3"
+  # Defaults to the chart appVersion
+  tag: ""
   pullPolicy: IfNotPresent
 
 # Number of replicas (only 1 supported for now due to S3 storage)
@@ -36,11 +37,18 @@ ingress:
         - registry.example.com
 
 # Authentication configuration
-# Generate htpasswd with: docker run --rm --entrypoint htpasswd registry:2 -Bbn username password
+# Generate htpasswd with: docker run --rm --entrypoint htpasswd httpd:2 -Bbn username password
+# Authentication is enabled when either htpasswd or existingSecret is set.
 auth:
   # Base64 encoded htpasswd file
   # Example: echo -n "user:hashedpassword" | base64
   htpasswd: ""
+  # Name of an existing Secret that holds the htpasswd file (e.g. created with
+  # kubectl create secret generic --from-file=htpasswd). When set, htpasswd is
+  # ignored and the chart creates no auth Secret.
+  existingSecret: ""
+  # Key in existingSecret that holds the htpasswd file
+  existingSecretKey: htpasswd
 
 # S3 storage backend configuration
 storage:
@@ -57,9 +65,17 @@ storage:
     # Helsinki: https://hel1.your-objectstorage.com
     endpoint: "https://fsn1.your-objectstorage.com"
 
-    # S3 credentials (create a separate secret or provide here)
+    # S3 credentials, rendered into a Secret created by the chart
     accessKey: ""
     secretKey: ""
+
+    # Name of an existing Secret that holds the S3 credentials. When set, accessKey
+    # and secretKey are ignored and the chart creates no S3 Secret. May be the same
+    # Secret as auth.existingSecret.
+    existingSecret: ""
+    # Keys in existingSecret that hold the access key and the secret key
+    existingSecretAccessKeyKey: accessKey
+    existingSecretSecretKeyKey: secretKey
 
     # Enable encryption at rest
     encrypt: true

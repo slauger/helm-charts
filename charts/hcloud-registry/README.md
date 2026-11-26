@@ -4,9 +4,10 @@ Docker Registry v2 with Hetzner Cloud S3 storage backend.
 
 ## Features
 
-- 🐳 Docker Registry v2 (registry:2.8.3)
+- 🐳 Docker Registry v2 (`registry` image, tag follows the chart `appVersion`)
 - 📦 Hetzner Cloud S3 as storage backend
 - 🔒 Basic Authentication with htpasswd
+- 🔑 Credentials inline or from an existing Secret (`existingSecret`)
 - 🌐 Ingress support with TLS
 - ✅ Health checks
 - 🔧 Fully configurable
@@ -32,7 +33,7 @@ Docker Registry v2 with Hetzner Cloud S3 storage backend.
 
 ```bash
 # Generate htpasswd for user "admin"
-docker run --rm --entrypoint htpasswd registry:2 -Bbn admin <YOUR_PASSWORD>
+docker run --rm --entrypoint htpasswd httpd:2 -Bbn admin <YOUR_PASSWORD>
 
 # Output example:
 # admin:$2y$05$...
@@ -94,6 +95,36 @@ Install:
 ```bash
 helm install my-registry slauger/hcloud-registry -f values.yaml
 ```
+
+### 5. Using an existing Secret (recommended for GitOps)
+
+Instead of putting the htpasswd file and the S3 credentials into the values, reference a Secret that is managed outside the chart (e.g. created by External Secrets, Sealed Secrets or SOPS). The chart then creates no Secrets of its own and ignores `auth.htpasswd`, `storage.s3.accessKey` and `storage.s3.secretKey`.
+
+One Secret can hold all three keys:
+
+```bash
+docker run --rm --entrypoint htpasswd httpd:2 -Bbn admin <YOUR_PASSWORD> > htpasswd
+
+kubectl create secret generic registry-credentials \
+  --from-file=htpasswd=./htpasswd \
+  --from-literal=accessKey=<YOUR_ACCESS_KEY> \
+  --from-literal=secretKey=<YOUR_SECRET_KEY>
+```
+
+The `htpasswd` key holds the htpasswd file as is (not base64 encoded a second time, `kubectl` and the Secret `data` field take care of that).
+
+```yaml
+auth:
+  existingSecret: registry-credentials
+
+storage:
+  s3:
+    bucket: "my-registry-bucket"
+    endpoint: "https://fsn1.your-objectstorage.com"
+    existingSecret: registry-credentials
+```
+
+Auth and S3 can also use separate Secrets, and the key names are configurable (`auth.existingSecretKey`, `storage.s3.existingSecretAccessKeyKey`, `storage.s3.existingSecretSecretKeyKey`), e.g. for a Secret with `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`. Authentication is enabled as soon as either `auth.htpasswd` or `auth.existingSecret` is set.
 
 ## Usage
 
@@ -158,7 +189,7 @@ The following table lists the configurable parameters of the chart and their def
 |-----------|-------------|---------|
 | `image.registry` | Docker image registry | `docker.io` |
 | `image.repository` | Docker image repository | `registry` |
-| `image.tag` | Docker image tag | `2.8.3` |
+| `image.tag` | Docker image tag | `""` (chart `appVersion`) |
 | `image.pullPolicy` | Image pull policy | `IfNotPresent` |
 | `replicaCount` | Number of replicas | `1` |
 | `service.type` | Kubernetes service type | `ClusterIP` |
@@ -166,13 +197,18 @@ The following table lists the configurable parameters of the chart and their def
 | `ingress.enabled` | Enable ingress | `true` |
 | `ingress.className` | Ingress class name | `traefik` |
 | `ingress.hosts` | Ingress hosts | `[{host: registry.example.com}]` |
-| `ingress.tls` | Ingress TLS configuration | `[]` |
+| `ingress.tls` | Ingress TLS configuration | `[{secretName: registry-tls, hosts: [registry.example.com]}]` |
 | `auth.htpasswd` | Base64 encoded htpasswd | `""` |
+| `auth.existingSecret` | Existing Secret with the htpasswd file, replaces `auth.htpasswd` | `""` |
+| `auth.existingSecretKey` | Key in `auth.existingSecret` holding the htpasswd file | `htpasswd` |
 | `storage.s3.bucket` | S3 bucket name | `my-registry-bucket` |
 | `storage.s3.region` | S3 region | `eu-central` |
 | `storage.s3.endpoint` | S3 endpoint URL | `https://fsn1.your-objectstorage.com` |
 | `storage.s3.accessKey` | S3 access key | `""` |
 | `storage.s3.secretKey` | S3 secret key | `""` |
+| `storage.s3.existingSecret` | Existing Secret with the S3 credentials, replaces `accessKey`/`secretKey` | `""` |
+| `storage.s3.existingSecretAccessKeyKey` | Key in `storage.s3.existingSecret` holding the access key | `accessKey` |
+| `storage.s3.existingSecretSecretKeyKey` | Key in `storage.s3.existingSecret` holding the secret key | `secretKey` |
 | `storage.s3.encrypt` | Enable encryption at rest | `true` |
 | `storage.s3.secure` | Use HTTPS | `true` |
 | `resources.limits.cpu` | CPU limit | `500m` |
@@ -223,7 +259,7 @@ Common issues:
 ## Security Considerations
 
 - Always use HTTPS/TLS for ingress (enable cert-manager)
-- Store credentials in Kubernetes Secrets (not in values files)
+- Store credentials in Kubernetes Secrets managed outside the chart and reference them with `auth.existingSecret` and `storage.s3.existingSecret` (not in values files)
 - Use strong passwords for htpasswd authentication
 - Consider using RBAC for S3 bucket access
 - Enable encryption at rest (`storage.s3.encrypt: true`)

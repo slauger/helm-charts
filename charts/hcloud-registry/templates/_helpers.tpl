@@ -63,9 +63,47 @@ Create the name of the service account to use
 Registry image
 */}}
 {{- define "hcloud-registry.image" -}}
+{{- $tag := .Values.image.tag | default .Chart.AppVersion }}
 {{- if .Values.image.registry }}
-{{- printf "%s/%s:%s" .Values.image.registry .Values.image.repository .Values.image.tag }}
+{{- printf "%s/%s:%s" .Values.image.registry .Values.image.repository $tag }}
 {{- else }}
-{{- printf "%s:%s" .Values.image.repository .Values.image.tag }}
+{{- printf "%s:%s" .Values.image.repository $tag }}
 {{- end }}
+{{- end }}
+
+{{/*
+Authentication is enabled when an htpasswd value or an existing Secret is given
+*/}}
+{{- define "hcloud-registry.authEnabled" -}}
+{{- if or .Values.auth.existingSecret .Values.auth.htpasswd }}true{{- end }}
+{{- end }}
+
+{{/*
+Secret and key holding the htpasswd file
+*/}}
+{{- define "hcloud-registry.authSecretName" -}}
+{{- .Values.auth.existingSecret | default (printf "%s-auth" (include "hcloud-registry.fullname" .)) }}
+{{- end }}
+
+{{- define "hcloud-registry.authSecretKey" -}}
+{{- if .Values.auth.existingSecret }}{{ .Values.auth.existingSecretKey | default "htpasswd" }}{{ else }}htpasswd{{ end }}
+{{- end }}
+
+{{/*
+S3 credentials come from an existing Secret or from accessKey/secretKey
+*/}}
+{{- define "hcloud-registry.s3CredentialsEnabled" -}}
+{{- if or .Values.storage.s3.existingSecret (and .Values.storage.s3.accessKey .Values.storage.s3.secretKey) }}true{{- end }}
+{{- end }}
+
+{{- define "hcloud-registry.s3SecretName" -}}
+{{- .Values.storage.s3.existingSecret | default (printf "%s-s3" (include "hcloud-registry.fullname" .)) }}
+{{- end }}
+
+{{- define "hcloud-registry.s3AccessKeyKey" -}}
+{{- if .Values.storage.s3.existingSecret }}{{ .Values.storage.s3.existingSecretAccessKeyKey | default "accessKey" }}{{ else }}accessKey{{ end }}
+{{- end }}
+
+{{- define "hcloud-registry.s3SecretKeyKey" -}}
+{{- if .Values.storage.s3.existingSecret }}{{ .Values.storage.s3.existingSecretSecretKeyKey | default "secretKey" }}{{ else }}secretKey{{ end }}
 {{- end }}
