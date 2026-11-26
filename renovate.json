@@ -1,0 +1,116 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    "helpers:pinGitHubActionDigests"
+  ],
+  "labels": [
+    "dependencies"
+  ],
+  "minimumReleaseAge": "3 days",
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "charts/unifi: appVersion is the default tag of goofball222/unifi",
+      "managerFilePatterns": [
+        "/^charts/unifi/Chart\\.yaml$/"
+      ],
+      "matchStrings": [
+        "(?m)^appVersion:\\s*\"?(?<currentValue>[^\"\\s]+)\"?"
+      ],
+      "datasourceTemplate": "docker",
+      "depNameTemplate": "goofball222/unifi"
+    },
+    {
+      "customType": "regex",
+      "description": "charts/iobroker: appVersion is the default tag of buanet/iobroker",
+      "managerFilePatterns": [
+        "/^charts/iobroker/Chart\\.yaml$/"
+      ],
+      "matchStrings": [
+        "(?m)^appVersion:\\s*\"?(?<currentValue>[^\"\\s]+)\"?"
+      ],
+      "datasourceTemplate": "docker",
+      "depNameTemplate": "buanet/iobroker"
+    },
+    {
+      "customType": "regex",
+      "description": "charts/squid: appVersion is the default tag of ubuntu/squid",
+      "managerFilePatterns": [
+        "/^charts/squid/Chart\\.yaml$/"
+      ],
+      "matchStrings": [
+        "(?m)^appVersion:\\s*\"?(?<currentValue>[^\"\\s]+)\"?"
+      ],
+      "datasourceTemplate": "docker",
+      "depNameTemplate": "ubuntu/squid"
+    },
+    {
+      "customType": "regex",
+      "description": "charts/hcloud-registry: appVersion is the default tag of registry",
+      "managerFilePatterns": [
+        "/^charts/hcloud-registry/Chart\\.yaml$/"
+      ],
+      "matchStrings": [
+        "(?m)^appVersion:\\s*\"?(?<currentValue>[^\"\\s]+)\"?"
+      ],
+      "datasourceTemplate": "docker",
+      "depNameTemplate": "registry"
+    },
+    {
+      "customType": "regex",
+      "description": "charts/deployment: envoy sidecar image given as a plain string",
+      "managerFilePatterns": [
+        "/^charts/deployment/values\\.yaml$/"
+      ],
+      "matchStrings": [
+        "(?m)^\\s+envoy:\\s*\"?(?<depName>[^\\s\":]+):(?<currentValue>[^\\s\"@]+)\"?"
+      ],
+      "datasourceTemplate": "docker"
+    }
+  ],
+  "packageRules": [
+    {
+      "description": "A chart that changes its default image or its appVersion needs a new chart version, otherwise ct lint fails and the release workflow skips it",
+      "matchFileNames": [
+        "charts/**"
+      ],
+      "bumpVersions": [
+        {
+          "name": "chart version",
+          "filePatterns": [
+            "{{packageFileDir}}/Chart.yaml"
+          ],
+          "matchStrings": [
+            "(?m)^version:\\s*(?<version>\\S+)"
+          ],
+          "bumpType": "{{#if isPatch}}patch{{else}}minor{{/if}}"
+        }
+      ]
+    },
+    {
+      "matchManagers": [
+        "github-actions"
+      ],
+      "groupName": "github-actions"
+    },
+    {
+      "description": "Helm and chart-testing installed by the workflows (with: version of azure/setup-helm and helm/chart-testing-action)",
+      "matchManagers": [
+        "github-actions"
+      ],
+      "groupName": "ci-tools",
+      "matchDepNames": [
+        "helm",
+        "chart-testing"
+      ]
+    },
+    {
+      "description": "The iobroker influxdb adapter speaks the InfluxDB 1.x API",
+      "matchPackageNames": [
+        "influxdb"
+      ],
+      "allowedVersions": "/^1\\./"
+    }
+  ]
+}
